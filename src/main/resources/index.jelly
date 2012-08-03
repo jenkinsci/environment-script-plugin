@@ -1,0 +1,6 @@
+<!--
+  This view is used to render the installed plugins page.
+-->
+<div>
+  Allows a script to be executed before a build, printing environment variables to be set.
+</div>
