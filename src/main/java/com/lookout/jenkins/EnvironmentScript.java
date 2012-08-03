@@ -28,12 +28,12 @@ import org.kohsuke.stapler.DataBoundConstructor;
  *
  * @author Jørgen P. Tjernø
  */
-public class EnvironmentScriptWrapper extends BuildWrapper {
+public class EnvironmentScript extends BuildWrapper {
 	private final String script;
 
 	// Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
-	public EnvironmentScriptWrapper(String script) {
+	public EnvironmentScript(String script) {
 		this.script = script;
 	}
 
@@ -133,7 +133,7 @@ public class EnvironmentScriptWrapper extends BuildWrapper {
 	}
 
 	/**
-	 * Descriptor for {@link EnvironmentScriptWrapper}. Used as a singleton.
+	 * Descriptor for {@link EnvironmentScript}. Used as a singleton.
 	 * The class is marked as public so that it can be accessed from views.
 	 *
 	 */
