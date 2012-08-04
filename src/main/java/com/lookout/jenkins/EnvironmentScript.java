@@ -1,5 +1,4 @@
 package com.lookout.jenkins;
-import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -13,9 +12,8 @@ import hudson.tasks.Shell;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,14 +22,13 @@ import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
- *
+ * Runs a specific chunk of code before each build, parsing output for new environment variables.
  *
  * @author Jørgen P. Tjernø
  */
 public class EnvironmentScript extends BuildWrapper {
 	private final String script;
 
-	// Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
 	public EnvironmentScript(String script) {
 		this.script = script;
@@ -48,7 +45,7 @@ public class EnvironmentScript extends BuildWrapper {
 	@Override
 	public Environment setUp(AbstractBuild build,
 			final Launcher launcher,
-			BuildListener listener) throws IOException, InterruptedException {
+			final BuildListener listener) throws IOException, InterruptedException {
 
 		// First we create the script in a temporary directory.
 		FilePath ws = build.getWorkspace();
@@ -77,9 +74,10 @@ public class EnvironmentScript extends BuildWrapper {
 			return null;
 		}
 
+
 		// Then we parse the variables out of it. We could use java.util.Properties, but it doesn't order the properties, so expanding variables with previous variables (like a shell script expects) doesn't work.
 		String[] lines = commandOutput.toString().split("(\n|\r\n)");
-		final List<Map.Entry<String, String>> injectedVariables = new ArrayList<Map.Entry<String, String>>(lines.length);
+		final Map<String, String> envAdditions = new HashMap<String, String>(lines.length);
 		for (String line : lines)
 		{
 			if (line.trim().isEmpty()) {
@@ -90,21 +88,15 @@ public class EnvironmentScript extends BuildWrapper {
 			if (keyAndValue.length < 2) {
 				listener.error("[environment-script] Invalid line encountered, ignoring: " + line);
 			} else {
-				Map.Entry<String, String> entry = new AbstractMap.SimpleEntry<String, String>(keyAndValue[0], keyAndValue[1]);
-				listener.getLogger().println("[environment-script] Adding variable '" + entry.getKey() + "' with value '" + entry.getValue() + "'");
-				injectedVariables.add(entry);
+				listener.getLogger().println("[environment-script] Adding variable '" + keyAndValue[0] + "' with value '" + keyAndValue[1] + "'");
+				envAdditions.put(keyAndValue[0], keyAndValue[1]);
 			}
 		}
 
 		return new Environment() {
 			@Override
 			public void buildEnvVars(Map<String, String> env) {
-				// Here we evaluate the variables we parsed above, in order.
-				// We expand against all the environment variables we have so far.
-				EnvVars vars = new EnvVars(env);
-				for (Map.Entry<String, String> variable : injectedVariables) {
-					env.put(variable.getKey(), vars.expand(variable.getValue()));
-				}
+				env.putAll(envAdditions);
 			}
 		};
 	}
@@ -112,7 +104,7 @@ public class EnvironmentScript extends BuildWrapper {
 	// Mostly stolen from hudson.tasks.Shell.buildCommandLine.
 	public String[] buildCommandLine(FilePath scriptFile) {
 		// Respect shebangs
-		if(script.startsWith("#!")) {
+		if (script.startsWith("#!")) {
 			// Find first line, or just entire script if it's one line.
 			int end = script.indexOf('\n');
 			if (end < 0)

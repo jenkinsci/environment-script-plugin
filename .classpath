@@ -1,4 +1,5 @@
 <classpath>
+  <classpathentry kind="src" path="src/test/java" including="**/*.java"/>
   <classpathentry kind="src" path="src/main/java" including="**/*.java"/>
   <classpathentry kind="src" path="target/generated-sources/localizer" including="**/*.java"/>
   <classpathentry kind="src" path="src/main/resources" excluding="**/*.java"/>

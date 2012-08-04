@@ -1,0 +1,67 @@
+package com.lookout.jenkins;
+
+import hudson.EnvVars;
+import hudson.model.Build;
+import hudson.model.Project;
+
+import org.jvnet.hudson.test.CaptureEnvironmentBuilder;
+import org.jvnet.hudson.test.HudsonTestCase;
+import org.jvnet.hudson.test.SingleFileSCM;
+
+public class EnvironmentScriptTest extends HudsonTestCase {
+	class TestJob {
+		public Project<?,?> project;
+		public CaptureEnvironmentBuilder builder;
+
+		public TestJob (String script) throws Exception {
+			project = createFreeStyleProject();
+			builder = new CaptureEnvironmentBuilder();
+			project.getBuildersList().add(builder);
+			project.getBuildWrappersList().add(new EnvironmentScript(script));
+		}
+	}
+
+	public void testWithEmptyScript () throws Exception {
+		TestJob job = new TestJob("");
+		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
+	}
+
+	final String SCRIPT_SIMPLE_VARIABLES =
+		"echo var1=one\n"
+		+ "echo var2=two\n"
+		+ "echo var3=three";
+	public void testWithSimpleVariables () throws Exception {
+		TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES);
+		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
+
+		EnvVars vars = job.builder.getEnvVars();
+		assertEquals("one", vars.get("var1"));
+		assertEquals("two", vars.get("var2"));
+		assertEquals("three", vars.get("var3"));
+	}
+
+	final String SCRIPT_DEPENDENT_VARIABLES =
+		"echo var1=one\n"
+		+ "echo var2='$var1 two'\n"
+		+ "echo var3='yo $var4'\n"
+		+ "echo var4='three ${var2}'";
+	public void testWithDependentVariables () throws Exception {
+		TestJob job = new TestJob(SCRIPT_DEPENDENT_VARIABLES);
+		Build<?, ?> b = assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
+		System.out.println(b.getLog());
+
+		EnvVars vars = job.builder.getEnvVars();
+		assertEquals("one", vars.get("var1"));
+		assertEquals("one two", vars.get("var2"));
+		assertEquals("yo three ${var2}", vars.get("var3"));
+		assertEquals("three one two", vars.get("var4"));
+	}
+
+	public void testReadingFileFromSCM () throws Exception {
+		TestJob job = new TestJob("cat envs");
+		job.project.setScm(new SingleFileSCM("envs", "foo_var=bar"));
+
+		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
+		assertEquals("bar", job.builder.getEnvVars().get("foo_var"));
+	}
+}
