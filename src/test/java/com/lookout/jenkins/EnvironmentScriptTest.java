@@ -57,6 +57,20 @@ public class EnvironmentScriptTest extends HudsonTestCase {
 		assertEquals("three one two", vars.get("var4"));
 	}
 
+	final String SCRIPT_OVERRIDDEN_VARIABLES =
+		"echo var1=one\n"
+		+ "echo var1+something='not one'\n"
+		+ "echo var2+something='two'";
+	public void testWithOverridenVariables () throws Exception {
+		TestJob job = new TestJob(SCRIPT_OVERRIDDEN_VARIABLES);
+		Build<?, ?> b = assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
+		System.out.println(b.getLog());
+
+		EnvVars vars = job.builder.getEnvVars();
+		assertEquals("not one:one", vars.get("var1"));
+		assertEquals("two", vars.get("var2"));
+	}
+
 	public void testReadingFileFromSCM () throws Exception {
 		TestJob job = new TestJob("cat envs");
 		job.project.setScm(new SingleFileSCM("envs", "foo_var=bar"));

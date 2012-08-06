@@ -1,4 +1,5 @@
 package com.lookout.jenkins;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -78,6 +79,7 @@ public class EnvironmentScript extends BuildWrapper {
 		// Then we parse the variables out of it. We could use java.util.Properties, but it doesn't order the properties, so expanding variables with previous variables (like a shell script expects) doesn't work.
 		String[] lines = commandOutput.toString().split("(\n|\r\n)");
 		final Map<String, String> envAdditions = new HashMap<String, String>(lines.length);
+		final Map<String, String> envOverrides = new HashMap<String, String>();
 		for (String line : lines)
 		{
 			if (line.trim().isEmpty()) {
@@ -89,14 +91,25 @@ public class EnvironmentScript extends BuildWrapper {
 				listener.error("[environment-script] Invalid line encountered, ignoring: " + line);
 			} else {
 				listener.getLogger().println("[environment-script] Adding variable '" + keyAndValue[0] + "' with value '" + keyAndValue[1] + "'");
-				envAdditions.put(keyAndValue[0], keyAndValue[1]);
+
+				// We sort overrides and additions into two different buckets, because they have to be processed in sequence.
+				// See hudson.EnvVars.override for how this logic works.
+				if (keyAndValue[0].indexOf('+') > 0)
+					envOverrides.put(keyAndValue[0], keyAndValue[1]);
+				else
+					envAdditions.put(keyAndValue[0], keyAndValue[1]);
 			}
 		}
 
 		return new Environment() {
 			@Override
 			public void buildEnvVars(Map<String, String> env) {
-				env.putAll(envAdditions);
+				// A little roundabout, but allows us to do overrides per
+				// how EnvVars#override works (PATH+unique=/foo/bar)
+				EnvVars envVars = new EnvVars(env);
+				envVars.putAll(envAdditions);
+				envVars.overrideAll(envOverrides);
+				env.putAll(envVars);
 			}
 		};
 	}
