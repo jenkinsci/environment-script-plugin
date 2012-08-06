@@ -10,7 +10,7 @@
   <groupId>com.lookout.jenkins</groupId>
   <artifactId>environment-script</artifactId>
   <packaging>hpi</packaging>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <name>Environment Script Plugin</name>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/Environment+Script+Plugin</url>
   <developers>
