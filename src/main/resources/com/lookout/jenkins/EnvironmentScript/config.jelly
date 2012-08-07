@@ -1,4 +1,17 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <j:choose>
+    <j:when test="${descriptor.isMatrix(request)}">
+      <f:entry title="${%Run only on parent}"
+         help="${resURL}/plugin/environment-script/help-runOnlyOnParent.html">
+        <f:checkbox name="onlyRunOnParent"
+                    checked="${instance.shouldOnlyRunOnParent()}" />
+      </f:entry>
+    </j:when>
+    <j:otherwise>
+      <f:invisibleEntry name="runOnlyOnParent" value="false" />
+    </j:otherwise>
+  </j:choose>
+
   <f:entry title="${%Script Content}"
            description="This script is executed before each build, and any output it produces will be evaluated as environment variables (key=value)."
            help="${resURL}/plugin/environment-script/help-script.html">

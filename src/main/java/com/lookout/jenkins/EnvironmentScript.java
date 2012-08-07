@@ -4,6 +4,11 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
+import hudson.matrix.MatrixAggregatable;
+import hudson.matrix.MatrixAggregator;
+import hudson.matrix.MatrixRun;
+import hudson.matrix.MatrixBuild;
+import hudson.matrix.MatrixProject;
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -21,18 +26,21 @@ import java.util.Map;
 import jenkins.model.Jenkins;
 
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
 
 /**
  * Runs a specific chunk of code before each build, parsing output for new environment variables.
  *
  * @author Jørgen P. Tjernø
  */
-public class EnvironmentScript extends BuildWrapper {
+public class EnvironmentScript extends BuildWrapper implements MatrixAggregatable {
 	private final String script;
+	private final boolean onlyRunOnParent;
 
 	@DataBoundConstructor
-	public EnvironmentScript(String script) {
+	public EnvironmentScript(String script, boolean onlyRunOnParent) {
 		this.script = script;
+		this.onlyRunOnParent = onlyRunOnParent;
 	}
 
 	/**
@@ -42,12 +50,43 @@ public class EnvironmentScript extends BuildWrapper {
 		return script;
 	}
 
+	public boolean shouldOnlyRunOnParent ()
+	{
+		return onlyRunOnParent;
+	}
+
 	@SuppressWarnings("rawtypes")
 	@Override
 	public Environment setUp(AbstractBuild build,
 			final Launcher launcher,
 			final BuildListener listener) throws IOException, InterruptedException {
+		if ((build instanceof MatrixRun) && shouldOnlyRunOnParent()) {
+			// If this is a matrix run and we have the onlyRunOnParent option
+			// enabled, we just retrieve the persisted environment from the
+			// PersistedEnvironment Action.
+			MatrixBuild parent = ((MatrixRun)build).getParentBuild();
+			if (parent != null) {
+				PersistedEnvironment persisted = parent.getAction(PersistedEnvironment.class);
+				if (persisted != null) {
+					return persisted.getEnvironment();
+				} else {
+					listener.error("[environment-script] Unable to load persisted environment from matrix parent job, not injecting any variables");
+					return new Environment() {};
+				}
+			} else {
+				// If there's no parent, then the module build was triggered
+				// manually, so we generate a new environment.
+				return generateEnvironment (build, launcher, listener);
+			}
+		} else {
+			// Otherwise we generate a new one.
+			return generateEnvironment (build, launcher, listener);
+		}
+	}
 
+	private Environment generateEnvironment(AbstractBuild<?, ?> build,
+			final Launcher launcher,
+			final BuildListener listener) throws IOException, InterruptedException {
 		// First we create the script in a temporary directory.
 		FilePath ws = build.getWorkspace();
 		FilePath scriptFile;
@@ -74,7 +113,6 @@ public class EnvironmentScript extends BuildWrapper {
 			listener.fatalError(Messages.EnvironmentScriptWrapper_UnableToExecuteScript(returnCode));
 			return null;
 		}
-
 
 		// Then we parse the variables out of it. We could use java.util.Properties, but it doesn't order the properties, so expanding variables with previous variables (like a shell script expects) doesn't work.
 		String[] lines = commandOutput.toString().split("(\n|\r\n)");
@@ -138,6 +176,35 @@ public class EnvironmentScript extends BuildWrapper {
 	}
 
 	/**
+	 * Create an aggregator that will calculate the environment once iff
+	 * onlyRunOnParent is true.
+	 *
+	 * The aggregator we return is called on the parent job for matrix jobs. In
+	 * it we generate the environment once and persist it in an Action (of type
+	 * {@link PersistedEnvironment}) if the job has onlyRunOnParent enabled. The
+	 * subjobs ("configuration runs") will retrieve this and apply it to their
+	 * environment, without performing the calculation.
+	 */
+	public MatrixAggregator createAggregator(MatrixBuild build, Launcher launcher, BuildListener listener) {
+		if (!shouldOnlyRunOnParent()) {
+			return null;
+		}
+
+		return new MatrixAggregator(build, launcher, listener) {
+			@Override
+			public boolean startBuild() throws InterruptedException, IOException {
+				Environment env = generateEnvironment(build, launcher, listener);
+				if (env == null) {
+					return false;
+				}
+
+				build.addAction(new PersistedEnvironment(env));
+				return true;
+			}
+		};
+	}
+
+	/**
 	 * Descriptor for {@link EnvironmentScript}. Used as a singleton.
 	 * The class is marked as public so that it can be accessed from views.
 	 *
@@ -155,6 +222,9 @@ public class EnvironmentScript extends BuildWrapper {
 		public boolean isApplicable(AbstractProject<?, ?> project) {
 			return true;
 		}
+
+		public boolean isMatrix(StaplerRequest request) {
+			return (request.findAncestorObject(AbstractProject.class) instanceof MatrixProject);
+		}
 	}
 }
-

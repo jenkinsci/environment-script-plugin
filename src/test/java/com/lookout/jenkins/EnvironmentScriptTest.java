@@ -17,7 +17,7 @@ public class EnvironmentScriptTest extends HudsonTestCase {
 			project = createFreeStyleProject();
 			builder = new CaptureEnvironmentBuilder();
 			project.getBuildersList().add(builder);
-			project.getBuildWrappersList().add(new EnvironmentScript(script));
+			project.getBuildWrappersList().add(new EnvironmentScript(script, false));
 		}
 	}
 
