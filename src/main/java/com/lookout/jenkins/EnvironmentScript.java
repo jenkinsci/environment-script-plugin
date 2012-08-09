@@ -20,6 +20,7 @@ import hudson.tasks.Shell;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -123,7 +124,7 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
 		try {
 			properties.load(propertiesInput);
 		} catch (IOException e) {
-			Util.displayIOException(e,listener);
+			Util.displayIOException(e, listener);
 			e.printStackTrace(listener.fatalError(Messages.EnvironmentScriptWrapper_UnableToParseScriptOutput()));
 			return null;
 		}
@@ -166,7 +167,7 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
 			String shell = script.substring(0, end).trim();
 			shell = shell.substring(2);
 
-			List<String> args = Arrays.asList(Util.tokenize(shell));
+			List<String> args = new ArrayList<String>(Arrays.asList(Util.tokenize(shell)));
 			args.add(scriptFile.getRemote());
 
 			return args.toArray(new String[args.size()]);

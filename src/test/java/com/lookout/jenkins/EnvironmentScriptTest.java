@@ -1,10 +1,13 @@
 package com.lookout.jenkins;
 
+import javax.annotation.RegEx;
+
 import hudson.EnvVars;
 import hudson.model.Build;
 import hudson.model.Project;
 
 import org.jvnet.hudson.test.CaptureEnvironmentBuilder;
+import org.jvnet.hudson.test.For;
 import org.jvnet.hudson.test.HudsonTestCase;
 import org.jvnet.hudson.test.SingleFileSCM;
 
@@ -21,15 +24,31 @@ public class EnvironmentScriptTest extends HudsonTestCase {
 		}
 	}
 
+	final static String SCRIPT_SIMPLE_VARIABLES =
+		"echo var1=one\n"
+		+ "echo var2=two\n"
+		+ "echo var3=three";
+
+	final static String SCRIPT_DEPENDENT_VARIABLES =
+		"echo var1=one\n"
+		+ "echo var2='$var1 two'\n"
+		+ "echo var3='yo $var4'\n"
+		+ "echo var4='three ${var2}'";
+
+	final static String SCRIPT_OVERRIDDEN_VARIABLES =
+		"echo var1=one\n"
+		+ "echo var1+something='not one'\n"
+		+ "echo var2+something='two'";
+
+	final static String SCRIPT_SHEBANG =
+		"#!/bin/cat\n"
+		+ "hello=world";
+
 	public void testWithEmptyScript () throws Exception {
 		TestJob job = new TestJob("");
 		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
 	}
 
-	final static String SCRIPT_SIMPLE_VARIABLES =
-		"echo var1=one\n"
-		+ "echo var2=two\n"
-		+ "echo var3=three";
 	public void testWithSimpleVariables () throws Exception {
 		TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES);
 		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
@@ -40,11 +59,6 @@ public class EnvironmentScriptTest extends HudsonTestCase {
 		assertEquals("three", vars.get("var3"));
 	}
 
-	final static String SCRIPT_DEPENDENT_VARIABLES =
-		"echo var1=one\n"
-		+ "echo var2='$var1 two'\n"
-		+ "echo var3='yo $var4'\n"
-		+ "echo var4='three ${var2}'";
 	public void testWithDependentVariables () throws Exception {
 		TestJob job = new TestJob(SCRIPT_DEPENDENT_VARIABLES);
 		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
@@ -56,10 +70,6 @@ public class EnvironmentScriptTest extends HudsonTestCase {
 		assertEquals("three one two", vars.get("var4"));
 	}
 
-	final static String SCRIPT_OVERRIDDEN_VARIABLES =
-		"echo var1=one\n"
-		+ "echo var1+something='not one'\n"
-		+ "echo var2+something='two'";
 	public void testWithOverridenVariables () throws Exception {
 		TestJob job = new TestJob(SCRIPT_OVERRIDDEN_VARIABLES);
 		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
@@ -83,5 +93,13 @@ public class EnvironmentScriptTest extends HudsonTestCase {
 
 		// Make sure that the $PWD of the script is $WORKSPACE.
 		assertTrue(build.getWorkspace().child("was_run").exists());
+	}
+
+	public void testWithShebang () throws Exception {
+		TestJob job = new TestJob(SCRIPT_SHEBANG);
+		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
+
+		EnvVars vars = job.builder.getEnvVars();
+		assertEquals("world", vars.get("hello"));
 	}
 }
