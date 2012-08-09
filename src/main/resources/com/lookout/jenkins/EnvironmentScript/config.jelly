@@ -2,17 +2,19 @@
   <j:choose>
     <j:when test="${descriptor.isMatrix(request)}">
       <f:entry title="${%Run only on parent}"
-         help="${resURL}/plugin/environment-script/help-runOnlyOnParent.html">
+         help="${resURL}/plugin/environment-script/help-onlyRunOnParent.html">
         <f:checkbox name="onlyRunOnParent"
                     checked="${instance.shouldOnlyRunOnParent()}" />
       </f:entry>
     </j:when>
     <j:otherwise>
-      <f:invisibleEntry name="runOnlyOnParent" value="false" />
+      <f:invisibleEntry>
+        <input type="hidden" name="onlyRunOnParent" value="false" />
+      </f:invisibleEntry>
     </j:otherwise>
   </j:choose>
 
-  <f:entry title="${%Script Content}"
+  <f:entry title="${%Script content}"
            description="This script is executed before each build, and any output it produces will be evaluated as environment variables (key=value)."
            help="${resURL}/plugin/environment-script/help-script.html">
     <f:textarea name="script"
