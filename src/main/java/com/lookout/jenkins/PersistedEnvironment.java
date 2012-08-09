@@ -1,6 +1,5 @@
 package com.lookout.jenkins;
 
-import hudson.EnvVars;
 import hudson.model.Action;
 import hudson.tasks.BuildWrapper.Environment;
 
@@ -16,17 +15,10 @@ public class PersistedEnvironment implements Action {
 	}
 
 	public String getDisplayName() {
-		return "Environment Script variables";
+		return "Variables From Environment Script";
 	}
 
-	public String getIconFileName() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public String getUrlName() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
+	// Currently, we don't expose this through the web.
+	public String getIconFileName() { return null; }
+	public String getUrlName() { return null; }
 }
