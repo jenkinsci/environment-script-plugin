@@ -1,4 +1,5 @@
 package com.lookout.jenkins;
+
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -16,12 +17,14 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.tasks.Shell;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import jenkins.model.Jenkins;
 
@@ -50,8 +53,10 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
 		return script;
 	}
 
-	public boolean shouldOnlyRunOnParent ()
-	{
+	/**
+	 * @return Whether or not we only run this on the {@link MatrixBuild} parent, or on the individual {@link MatrixRun}s.
+	 */
+	public boolean shouldOnlyRunOnParent () {
 		return onlyRunOnParent;
 	}
 
@@ -88,8 +93,7 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
 			final Launcher launcher,
 			final BuildListener listener) throws IOException, InterruptedException {
 		// First we create the script in a temporary directory.
-		FilePath ws = build.getWorkspace();
-		FilePath scriptFile;
+		FilePath ws = build.getWorkspace(), scriptFile;
 		try {
 			// Create a file in the system temporary directory with our script in it.
 			scriptFile = ws.createTextTempFile(build.getProject().getName(), ".sh", script, false);
@@ -108,35 +112,33 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
 			.stdout(commandOutput)
 			.pwd(ws).join();
 
-		if (returnCode != 0)
-		{
+		if (returnCode != 0) {
 			listener.fatalError(Messages.EnvironmentScriptWrapper_UnableToExecuteScript(returnCode));
 			return null;
 		}
 
-		// Then we parse the variables out of it. We could use java.util.Properties, but it doesn't order the properties, so expanding variables with previous variables (like a shell script expects) doesn't work.
-		String[] lines = commandOutput.toString().split("(\n|\r\n)");
-		final Map<String, String> envAdditions = new HashMap<String, String>(lines.length);
-		final Map<String, String> envOverrides = new HashMap<String, String>();
-		for (String line : lines)
-		{
-			if (line.trim().isEmpty()) {
-				continue;
-			}
+		// Pass the output of the command to the Properties loader.
+		ByteArrayInputStream propertiesInput = new ByteArrayInputStream(commandOutput.toByteArray());
+		Properties properties = new Properties();
+		try {
+			properties.load(propertiesInput);
+		} catch (IOException e) {
+			Util.displayIOException(e,listener);
+			e.printStackTrace(listener.fatalError(Messages.EnvironmentScriptWrapper_UnableToParseScriptOutput()));
+			return null;
+		}
 
-			String[] keyAndValue = line.split("=", 2);
-			if (keyAndValue.length < 2) {
-				listener.error("[environment-script] Invalid line encountered, ignoring: " + line);
-			} else {
-				listener.getLogger().println("[environment-script] Adding variable '" + keyAndValue[0] + "' with value '" + keyAndValue[1] + "'");
+		// We sort overrides and additions into two different buckets, because they have to be processed in sequence.
+		// See hudson.EnvVars.override for how this logic works.
+		final Map<String, String> envAdditions = new HashMap<String, String>(), envOverrides = new HashMap<String, String>();
+		for (String key : properties.stringPropertyNames()) {
+			String value = properties.getProperty(key);
+			listener.getLogger().println("[environment-script] Adding variable '" + key + "' with value '" + value + "'");
 
-				// We sort overrides and additions into two different buckets, because they have to be processed in sequence.
-				// See hudson.EnvVars.override for how this logic works.
-				if (keyAndValue[0].indexOf('+') > 0)
-					envOverrides.put(keyAndValue[0], keyAndValue[1]);
-				else
-					envAdditions.put(keyAndValue[0], keyAndValue[1]);
-			}
+			if (key.indexOf('+') > 0)
+				envOverrides.put(key, value);
+			else
+				envAdditions.put(key, value);
 		}
 
 		return new Environment() {
