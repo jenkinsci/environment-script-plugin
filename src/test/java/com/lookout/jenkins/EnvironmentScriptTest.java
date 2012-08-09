@@ -26,7 +26,7 @@ public class EnvironmentScriptTest extends HudsonTestCase {
 		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
 	}
 
-	final String SCRIPT_SIMPLE_VARIABLES =
+	final static String SCRIPT_SIMPLE_VARIABLES =
 		"echo var1=one\n"
 		+ "echo var2=two\n"
 		+ "echo var3=three";
@@ -40,15 +40,14 @@ public class EnvironmentScriptTest extends HudsonTestCase {
 		assertEquals("three", vars.get("var3"));
 	}
 
-	final String SCRIPT_DEPENDENT_VARIABLES =
+	final static String SCRIPT_DEPENDENT_VARIABLES =
 		"echo var1=one\n"
 		+ "echo var2='$var1 two'\n"
 		+ "echo var3='yo $var4'\n"
 		+ "echo var4='three ${var2}'";
 	public void testWithDependentVariables () throws Exception {
 		TestJob job = new TestJob(SCRIPT_DEPENDENT_VARIABLES);
-		Build<?, ?> b = assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
-		System.out.println(b.getLog());
+		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
 
 		EnvVars vars = job.builder.getEnvVars();
 		assertEquals("one", vars.get("var1"));
@@ -57,14 +56,13 @@ public class EnvironmentScriptTest extends HudsonTestCase {
 		assertEquals("three one two", vars.get("var4"));
 	}
 
-	final String SCRIPT_OVERRIDDEN_VARIABLES =
+	final static String SCRIPT_OVERRIDDEN_VARIABLES =
 		"echo var1=one\n"
 		+ "echo var1+something='not one'\n"
 		+ "echo var2+something='two'";
 	public void testWithOverridenVariables () throws Exception {
 		TestJob job = new TestJob(SCRIPT_OVERRIDDEN_VARIABLES);
-		Build<?, ?> b = assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
-		System.out.println(b.getLog());
+		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
 
 		EnvVars vars = job.builder.getEnvVars();
 		assertEquals("not one:one", vars.get("var1"));
@@ -77,5 +75,13 @@ public class EnvironmentScriptTest extends HudsonTestCase {
 
 		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
 		assertEquals("bar", job.builder.getEnvVars().get("foo_var"));
+	}
+
+	public void testWorkingDirectory () throws Exception {
+		TestJob job = new TestJob("echo hi >was_run");
+		Build<?, ?> build = assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
+
+		// Make sure that the $PWD of the script is $WORKSPACE.
+		assertTrue(build.getWorkspace().child("was_run").exists());
 	}
 }
