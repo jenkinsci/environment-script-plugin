@@ -44,6 +44,9 @@ public class EnvironmentScriptTest extends HudsonTestCase {
 		"#!/bin/cat\n"
 		+ "hello=world";
 
+	final static String SCRIPT_UTF8 =
+		"echo UTFstr=mąż";
+
 	public void testWithEmptyScript () throws Exception {
 		TestJob job = new TestJob("");
 		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
@@ -102,4 +105,12 @@ public class EnvironmentScriptTest extends HudsonTestCase {
 		EnvVars vars = job.builder.getEnvVars();
 		assertEquals("world", vars.get("hello"));
 	}
+
+	public void testUTFHandling () throws Exception {
+        TestJob job = new TestJob(SCRIPT_UTF8);
+        assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
+
+        EnvVars vars = job.builder.getEnvVars();
+        assertEquals("mąż", vars.get("UTFstr"));
+    }
 }
