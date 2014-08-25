@@ -6,6 +6,7 @@
     <ul>
       <li>If the script fails (returns a non-zero exit status), the build is failed.</li>
       <li>If it succeeds, the output is expected to be lines of <tt>KEY=VALUE</tt> pairs that will be injected into the environment variables. The output is parsed using <a href="http://docs.oracle.com/javase/6/docs/api/java/util/Properties.html#load(java.io.Reader)">java.util.Properties</a>.</li>
+      <li>The output is expected to be UTF-8 encoded.</li>
     </ul>
   </p>
 
