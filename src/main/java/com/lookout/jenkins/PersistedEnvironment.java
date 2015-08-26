@@ -4,21 +4,26 @@ import hudson.model.Action;
 import hudson.tasks.BuildWrapper.Environment;
 
 public class PersistedEnvironment implements Action {
-	private Environment environment;
+    private Environment environment;
 
-	public PersistedEnvironment (Environment environment) {
-		this.environment = environment;
-	}
+    public PersistedEnvironment(Environment environment) {
+        this.environment = environment;
+    }
 
-	public Environment getEnvironment () {
-		return environment;
-	}
+    public Environment getEnvironment() {
+        return environment;
+    }
 
-	public String getDisplayName() {
-		return "Variables From Environment Script";
-	}
+    public String getDisplayName() {
+        return "Variables From Environment Script";
+    }
 
-	// Currently, we don't expose this through the web.
-	public String getIconFileName() { return null; }
-	public String getUrlName() { return null; }
+    // Currently, we don't expose this through the web.
+    public String getIconFileName() {
+        return null;
+    }
+
+    public String getUrlName() {
+        return null;
+    }
 }
