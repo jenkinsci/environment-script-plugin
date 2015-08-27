@@ -52,6 +52,9 @@ public class EnvironmentScriptTest {
                     + "echo var1+something='not one'\n"
                     + "echo var2+something='two'";
 
+        final static String SCRIPT_UTF8 =
+                "echo UTFstr=mąż";
+
     final static String SCRIPT_SHEBANG =
             "#!/bin/cat\n"
                     + "hello=world";
@@ -116,5 +119,13 @@ public class EnvironmentScriptTest {
         assertEquals(Result.SUCCESS, job.build.getResult());
         EnvVars vars = job.build.getEnvironment(job.listener);
         assertEquals("world", vars.get("hello"));
+    }
+
+        public void testUTFHandling () throws Exception {
+        TestJob job = new TestJob(SCRIPT_UTF8);
+        assertEquals(Result.SUCCESS, job.build.getResult());
+
+        EnvVars vars = job.build.getEnvironment(job.listener);
+        assertEquals("mąż", vars.get("UTFstr"));
     }
 }

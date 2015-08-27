@@ -21,6 +21,7 @@ import hudson.tasks.Shell;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -103,7 +104,7 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
             scriptFile = ws.createTextTempFile(build.getProject().getName(), ".sh", script, false);
         } catch (IOException e) {
             Util.displayIOException(e, listener);
-             e.printStackTrace(listener.fatalError(Messages.EnvironmentScriptWrapper_UnableToProduceScript()));
+            e.printStackTrace(listener.fatalError(Messages.EnvironmentScriptWrapper_UnableToProduceScript()));
             return null;
         }
 
@@ -123,12 +124,13 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
 
         // Pass the output of the command to the Properties loader.
         ByteArrayInputStream propertiesInput = new ByteArrayInputStream(commandOutput.toByteArray());
+        InputStreamReader propertiesInputReader = new InputStreamReader(propertiesInput, "UTF-8");
         Properties properties = new Properties();
         try {
-            properties.load(propertiesInput);
+            properties.load(propertiesInputReader);
         } catch (IOException e) {
             Util.displayIOException(e, listener);
-//            e.printStackTrace(listener.fatalError(Messages.EnvironmentScriptWrapper_UnableToParseScriptOutput()));
+            e.printStackTrace(listener.fatalError(Messages.EnvironmentScriptWrapper_UnableToParseScriptOutput()));
             return null;
         }
 
