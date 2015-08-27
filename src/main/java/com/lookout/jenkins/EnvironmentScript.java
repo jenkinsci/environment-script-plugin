@@ -209,6 +209,7 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
                 }
 
                 build.addAction(new PersistedEnvironment(env));
+                build.getEnvironments().add(env);
                 return true;
             }
         };
