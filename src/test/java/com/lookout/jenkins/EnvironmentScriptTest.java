@@ -1,105 +1,131 @@
 package com.lookout.jenkins;
 
-import javax.annotation.RegEx;
+import static org.junit.Assert.*;
+
+import java.nio.charset.Charset;
 
 import hudson.EnvVars;
-import hudson.model.Build;
-import hudson.model.Project;
+import hudson.model.FreeStyleBuild;
+import hudson.model.TaskListener;
+import hudson.model.FreeStyleProject;
+import hudson.model.Result;
+import hudson.util.StreamTaskListener;
 
-import org.jvnet.hudson.test.CaptureEnvironmentBuilder;
-import org.jvnet.hudson.test.For;
-import org.jvnet.hudson.test.HudsonTestCase;
+import org.junit.Rule;
+import org.junit.Test;
+import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.SingleFileSCM;
 
-public class EnvironmentScriptTest extends HudsonTestCase {
-	class TestJob {
-		public Project<?,?> project;
-		public CaptureEnvironmentBuilder builder;
+public class EnvironmentScriptTest {
 
-		public TestJob (String script) throws Exception {
-			project = createFreeStyleProject();
-			builder = new CaptureEnvironmentBuilder();
-			project.getBuildersList().add(builder);
-			project.getBuildWrappersList().add(new EnvironmentScript(script, false));
-		}
-	}
+    @Rule
+    public JenkinsRule jenkins = new JenkinsRule();
 
-	final static String SCRIPT_SIMPLE_VARIABLES =
-		"echo var1=one\n"
-		+ "echo var2=two\n"
-		+ "echo var3=three";
+    class TestJob {
+        public FreeStyleProject project;
+        public FreeStyleBuild build;
+        public TaskListener listener;
 
-	final static String SCRIPT_DEPENDENT_VARIABLES =
-		"echo var1=one\n"
-		+ "echo var2='$var1 two'\n"
-		+ "echo var3='yo $var4'\n"
-		+ "echo var4='three ${var2}'";
+        public TestJob(String script) throws Exception {
+            listener = new StreamTaskListener(System.err, Charset.defaultCharset());
+            project = jenkins.createFreeStyleProject();
+            project.getBuildWrappersList().add(new EnvironmentScript(script, false));
+            project.setScm(new SingleFileSCM("envs", "foo_var=bar"));
+            build = jenkins.buildAndAssertSuccess(project);
+            jenkins.waitUntilNoActivity();
+        }
+    }
 
-	final static String SCRIPT_OVERRIDDEN_VARIABLES =
-		"echo var1=one\n"
-		+ "echo var1+something='not one'\n"
-		+ "echo var2+something='two'";
+    final static String SCRIPT_SIMPLE_VARIABLES =
+            "echo var1=one\n"
+                    + "echo var2=two\n"
+                    + "echo var3=three";
 
-	final static String SCRIPT_SHEBANG =
-		"#!/bin/cat\n"
-		+ "hello=world";
+    final static String SCRIPT_DEPENDENT_VARIABLES =
+            "echo var1=one\n"
+                    + "echo var2='$var1 two'\n"
+                    + "echo var3='yo $var4'\n"
+                    + "echo var4='three ${var2}'";
 
-	public void testWithEmptyScript () throws Exception {
-		TestJob job = new TestJob("");
-		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
-	}
+    final static String SCRIPT_OVERRIDDEN_VARIABLES =
+            "echo var1=one\n"
+                    + "echo var1+something='not one'\n"
+                    + "echo var2+something='two'";
 
-	public void testWithSimpleVariables () throws Exception {
-		TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES);
-		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
+        final static String SCRIPT_UTF8 =
+                "echo UTFstr=mąż";
 
-		EnvVars vars = job.builder.getEnvVars();
-		assertEquals("one", vars.get("var1"));
-		assertEquals("two", vars.get("var2"));
-		assertEquals("three", vars.get("var3"));
-	}
+    final static String SCRIPT_SHEBANG =
+            "#!/bin/cat\n"
+                    + "hello=world";
 
-	public void testWithDependentVariables () throws Exception {
-		TestJob job = new TestJob(SCRIPT_DEPENDENT_VARIABLES);
-		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
+    public void testWithEmptyScript() throws Exception {
+        TestJob job = new TestJob("");
+        assertEquals(Result.SUCCESS, job.build.getResult());
+    }
 
-		EnvVars vars = job.builder.getEnvVars();
-		assertEquals("one", vars.get("var1"));
-		assertEquals("one two", vars.get("var2"));
-		assertEquals("yo three ${var2}", vars.get("var3"));
-		assertEquals("three one two", vars.get("var4"));
-	}
+    @Test
+    public void testWithSimpleVariables() throws Exception {
+        TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES);
+        assertEquals(Result.SUCCESS, job.build.getResult());
 
-	public void testWithOverridenVariables () throws Exception {
-		TestJob job = new TestJob(SCRIPT_OVERRIDDEN_VARIABLES);
-		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
+        EnvVars vars = job.build.getEnvironment(job.listener);
+        assertEquals("one", vars.get("var1"));
+        assertEquals("two", vars.get("var2"));
+        assertEquals("three", vars.get("var3"));
+    }
 
-		EnvVars vars = job.builder.getEnvVars();
-		assertEquals("not one:one", vars.get("var1"));
-		assertEquals("two", vars.get("var2"));
-	}
+    @Test
+    public void testWithDependentVariables() throws Exception {
+        TestJob job = new TestJob(SCRIPT_DEPENDENT_VARIABLES);
+        assertEquals(Result.SUCCESS, job.build.getResult());
 
-	public void testReadingFileFromSCM () throws Exception {
-		TestJob job = new TestJob("cat envs");
-		job.project.setScm(new SingleFileSCM("envs", "foo_var=bar"));
+        EnvVars vars = job.build.getEnvironment(job.listener);
+        assertEquals("one", vars.get("var1"));
+        assertEquals("one two", vars.get("var2"));
+        assertEquals("yo three ${var2}", vars.get("var3"));
+        assertEquals("three one two", vars.get("var4"));
+    }
 
-		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
-		assertEquals("bar", job.builder.getEnvVars().get("foo_var"));
-	}
+    @Test
+    public void testWithOverridenVariables() throws Exception {
+        TestJob job = new TestJob(SCRIPT_OVERRIDDEN_VARIABLES);
+        assertEquals(Result.SUCCESS, job.build.getResult());
 
-	public void testWorkingDirectory () throws Exception {
-		TestJob job = new TestJob("echo hi >was_run");
-		Build<?, ?> build = assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
+        EnvVars vars = job.build.getEnvironment(job.listener);
+        assertEquals("not one:one", vars.get("var1"));
+        assertEquals("two", vars.get("var2"));
+    }
 
-		// Make sure that the $PWD of the script is $WORKSPACE.
-		assertTrue(build.getWorkspace().child("was_run").exists());
-	}
+    @Test
+    public void testReadingFileFromSCM() throws Exception {
+        TestJob job = new TestJob("cat envs");
+        assertEquals(Result.SUCCESS, job.build.getResult());
+        assertEquals("bar", job.build.getEnvironment(job.listener).get("foo_var"));
+    }
 
-	public void testWithShebang () throws Exception {
-		TestJob job = new TestJob(SCRIPT_SHEBANG);
-		assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
+    @Test
+    public void testWorkingDirectory() throws Exception {
+        TestJob job = new TestJob("echo hi >was_run");
 
-		EnvVars vars = job.builder.getEnvVars();
-		assertEquals("world", vars.get("hello"));
-	}
+        // Make sure that the $PWD of the script is $WORKSPACE.
+        assertTrue(job.build.getWorkspace().child("was_run").exists());
+    }
+
+    @Test
+    public void testWithShebang() throws Exception {
+        TestJob job = new TestJob(SCRIPT_SHEBANG);
+
+        assertEquals(Result.SUCCESS, job.build.getResult());
+        EnvVars vars = job.build.getEnvironment(job.listener);
+        assertEquals("world", vars.get("hello"));
+    }
+
+        public void testUTFHandling () throws Exception {
+        TestJob job = new TestJob(SCRIPT_UTF8);
+        assertEquals(Result.SUCCESS, job.build.getResult());
+
+        EnvVars vars = job.build.getEnvironment(job.listener);
+        assertEquals("mąż", vars.get("UTFstr"));
+    }
 }
