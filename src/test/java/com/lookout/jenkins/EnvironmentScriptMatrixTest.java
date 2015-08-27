@@ -1,6 +1,15 @@
 package com.lookout.jenkins;
 
+import static org.junit.Assert.*;
+
 import java.io.File;
+import java.nio.charset.Charset;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.jvnet.hudson.test.JenkinsRule;
+
+import com.google.common.io.Files;
 
 import hudson.FilePath;
 import hudson.matrix.Axis;
@@ -9,87 +18,86 @@ import hudson.matrix.MatrixRun;
 import hudson.matrix.DefaultMatrixExecutionStrategyImpl;
 import hudson.matrix.MatrixBuild;
 import hudson.matrix.MatrixProject;
+import hudson.model.Result;
+import hudson.model.TaskListener;
+import hudson.util.StreamTaskListener;
 
-import org.jvnet.hudson.test.CaptureEnvironmentBuilder;
-import org.jvnet.hudson.test.HudsonTestCase;
+public class EnvironmentScriptMatrixTest {
 
-public class EnvironmentScriptMatrixTest extends HudsonTestCase {
-	class MatrixTestJob {
-		public MatrixProject project;
-		public CaptureEnvironmentBuilder captureBuilder;
-		public CountBuilder countBuilder;
+    @Rule
+    public JenkinsRule jenkins = new JenkinsRule();
 
-		public MatrixTestJob (String script, boolean onlyRunOnParent) throws Exception {
-			project = createMatrixProject();
+    class MatrixTestJob {
+        public MatrixProject project;
+        public CountBuilder countBuilder;
+        public MatrixBuild build;
+        public TaskListener listener;
 
-			// This forces it to run the builds sequentially, to prevent any
-			// race conditions when concurrently updating the 'counter' file.
-			project.setExecutionStrategy(new DefaultMatrixExecutionStrategyImpl(true, null, null, null));
+        public MatrixTestJob(String script, boolean onlyRunOnParent) throws Exception {
+            listener = new StreamTaskListener(System.err, Charset.defaultCharset());
+            project = jenkins.createMatrixProject();
 
-			project.setAxes(new AxisList(new Axis("axis", "value1", "value2")));
-			project.getBuildWrappersList().add(new EnvironmentScript(script, onlyRunOnParent));
+            // This forces it to run the builds sequentially, to prevent any
+            // race conditions when concurrently updating the 'counter' file.
+            project.setExecutionStrategy(new DefaultMatrixExecutionStrategyImpl(true, null, null, null));
 
-			captureBuilder = new CaptureEnvironmentBuilder();
-			project.getBuildersList().add(captureBuilder);
+            project.setAxes(new AxisList(new Axis("axis", "value1", "value2")));
+            project.getBuildWrappersList().add(new EnvironmentScript(script, onlyRunOnParent));
+            countBuilder = new CountBuilder();
+            project.getBuildersList().add(countBuilder);
+            build = jenkins.buildAndAssertSuccess(project);
+            jenkins.waitUntilNoActivity();
+        }
+    }
 
-			countBuilder = new CountBuilder();
-			project.getBuildersList().add(countBuilder);
-		}
-	}
+    final static String SCRIPT_COUNTER =
+            "file='%s/counter'\n"
+                    + "if [ -f $file ]; then\n"
+                    + "  let i=$(cat $file)+1\n"
+                    + "else\n"
+                    + "  i=1\n"
+                    + "fi\n"
+                    + "echo 1 >was_run\n"
+                    + "echo $i >$file\n"
+                    + "echo seen=yes";
 
-	final static String SCRIPT_COUNTER =
-		"file='%s/counter'\n"
-		+ "if [ -f $file ]; then\n"
-		+ "  let i=$(cat $file)+1\n"
-		+ "else\n"
-		+ "  i=1\n"
-		+ "fi\n"
-		+ "echo 1 >was_run\n"
-		+ "echo $i >$file\n"
-		+ "echo seen=yes";
+    // Generate a random directory that we pass to the shell script.
+    File tempDir = Files.createTempDir();
+    String script = String.format(SCRIPT_COUNTER, tempDir.getPath());
 
+    @Test
+    public void testWithParentOnly() throws Exception {
+        MatrixTestJob job = new MatrixTestJob(script, true);
+        buildAndAssert(job);
 
-	// Explicit constructor so that we can call createTmpDir.
-	public EnvironmentScriptMatrixTest () throws Exception {}
+        // We ensure that this was only run once (on the parent)
+        assertEquals("1", new FilePath(tempDir).child("counter").readToString().trim());
 
-	// Generate a random directory that we pass to the shell script.
-	File tempDir = createTmpDir();
-	String script = String.format(SCRIPT_COUNTER, tempDir.getPath());
+        // Then make sure that it was in fact in the parent's WS that we ran.
+        assertTrue(job.build.getWorkspace().child("was_run").exists());
+        for (MatrixRun run : job.build.getRuns())
+            assertFalse(run.getWorkspace().child("was_run").exists());
+    }
 
-	public void testWithParentOnly () throws Exception {
-		MatrixTestJob job = new MatrixTestJob(script, true);
-		MatrixBuild build = buildAndAssert(job);
+    @Test
+    public void testWithEachChild() throws Exception {
+        MatrixTestJob job = new MatrixTestJob(script, false);
 
-		// We ensure that this was only run once (on the parent)
-		assertEquals("1", new FilePath(tempDir).child("counter").readToString().trim());
+        // We ensure that this was only run twice - once for each axis combination - but not on the parent.
+        assertEquals("2", new FilePath(tempDir).child("counter").readToString().trim());
 
-		// Then make sure that it was in fact in the parent's WS that we ran.
-		assertTrue(build.getWorkspace().child("was_run").exists());
-		for (MatrixRun run : build.getRuns())
-			assertFalse(run.getWorkspace().child("was_run").exists());
-	}
+        // Then make sure that it was in fact in the combination jobs' workspace.
+        assertFalse(job.build.getWorkspace().child("was_run").exists());
+        for (MatrixRun run : job.build.getRuns())
+            assertTrue(run.getWorkspace().child("was_run").exists());
+    }
 
-	public void testWithEachChild () throws Exception {
-		MatrixTestJob job = new MatrixTestJob(script, false);
-		MatrixBuild build = buildAndAssert(job);
+    private void buildAndAssert(MatrixTestJob job) throws Exception {
+        assertEquals(Result.SUCCESS, job.build.getResult());
 
-		// We ensure that this was only run twice - once for each axis combination - but not on the parent.
-		assertEquals("2", new FilePath(tempDir).child("counter").readToString().trim());
-
-		// Then make sure that it was in fact in the combination jobs' workspace.
-		assertFalse(build.getWorkspace().child("was_run").exists());
-		for (MatrixRun run : build.getRuns())
-			assertTrue(run.getWorkspace().child("was_run").exists());
-	}
-
-	private MatrixBuild buildAndAssert(MatrixTestJob job) throws Exception {
-		MatrixBuild build = assertBuildStatusSuccess(job.project.scheduleBuild2(0).get());
-
-		// Make sure that the environment variables set in the script are properly propagated.
-		assertEquals("yes", job.captureBuilder.getEnvVars().get("seen"));
-		// Make sure that the builder was executed twice, once for each axis value.
-		assertEquals(2, job.countBuilder.getCount());
-
-		return build;
-	}
+        // Make sure that the environment variables set in the script are properly propagated.
+        assertEquals("yes", job.build.getEnvironment(job.listener).get("seen"));
+        // Make sure that the builder was executed twice, once for each axis value.
+        assertEquals(2, job.countBuilder.getCount());
+    }
 }

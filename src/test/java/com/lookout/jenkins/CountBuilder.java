@@ -19,25 +19,26 @@ import hudson.tasks.Builder;
  * @author Jørgen P. Tjernø <jorgen.tjerno@mylookout.com>
  */
 public class CountBuilder extends Builder {
-	int count = 0;
+    int count = 0;
 
-	public int getCount() {
-		return count;
-	}
+    public int getCount() {
+        return count;
+    }
 
-	public synchronized boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-		count++;
-		return true;
-	}
+    public synchronized boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
+            throws InterruptedException, IOException {
+        count++;
+        return true;
+    }
 
-	@Extension
-	public static final class DescriptorImpl extends Descriptor<Builder> {
-		public Builder newInstance(StaplerRequest req, JSONObject data) {
-			throw new UnsupportedOperationException();
-		}
+    @Extension
+    public static final class DescriptorImpl extends Descriptor<Builder> {
+        public Builder newInstance(StaplerRequest req, JSONObject data) {
+            throw new UnsupportedOperationException();
+        }
 
-		public String getDisplayName() {
-			return "Count Number Of Builds";
-		}
-	}
+        public String getDisplayName() {
+            return "Count Number Of Builds";
+        }
+    }
 }
