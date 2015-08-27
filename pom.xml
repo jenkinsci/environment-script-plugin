@@ -23,6 +23,12 @@
             <email>jorgen.tjerno@mylookout.com</email>
             <timezone>-8</timezone>
         </developer>
+        <developer>
+            <id>dawidmalina</id>
+            <name>Dawid Malinowski</name>
+            <email>dawidmalina@gmail.com</email>
+            <timezone>+2</timezone>
+        </developer>
     </developers>
 
     <properties>
