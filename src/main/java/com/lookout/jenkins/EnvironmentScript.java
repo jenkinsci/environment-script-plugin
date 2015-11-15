@@ -98,24 +98,30 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
             final Launcher launcher,
             final BuildListener listener) throws IOException, InterruptedException {
         // First we create the script in a temporary directory.
-        FilePath ws = build.getWorkspace(), scriptFile;
+        FilePath ws = build.getWorkspace(), scriptFile = null;
+
+        ByteArrayOutputStream commandOutput = new ByteArrayOutputStream();
+        int returnCode = -1;
         try {
             // Create a file in the system temporary directory with our script in it.
             scriptFile = ws.createTextTempFile(build.getProject().getName(), ".sh", script, false);
+
+            // Then we execute the script, putting STDOUT in commandOutput.
+            returnCode = launcher.launch().cmds(buildCommandLine(scriptFile))
+                    .envs(build.getEnvironment(listener))
+                    .stderr(listener.getLogger())
+                    .stdout(commandOutput)
+                    .pwd(ws).join();
         } catch (IOException e) {
             Util.displayIOException(e, listener);
             e.printStackTrace(listener.fatalError(Messages.EnvironmentScriptWrapper_UnableToProduceScript()));
             return null;
+        } finally {
+            // Make sure we clean scriptFile
+            if (scriptFile != null && scriptFile.exists()) {
+                scriptFile.delete();
+            }
         }
-
-        // Then we execute the script, putting STDOUT in commandOutput.
-        ByteArrayOutputStream commandOutput = new ByteArrayOutputStream();
-        int returnCode =
-                launcher.launch().cmds(buildCommandLine(scriptFile))
-                        .envs(build.getEnvironment(listener))
-                        .stderr(listener.getLogger())
-                        .stdout(commandOutput)
-                        .pwd(ws).join();
 
         if (returnCode != 0) {
             listener.fatalError(Messages.EnvironmentScriptWrapper_UnableToExecuteScript(returnCode));
