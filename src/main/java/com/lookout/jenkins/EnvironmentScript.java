@@ -103,8 +103,10 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
         ByteArrayOutputStream commandOutput = new ByteArrayOutputStream();
         int returnCode = -1;
         try {
+            // Make sure prefix will always be more than 3 letters
+            final String prefix = "env-" + build.getProject().getName();
             // Create a file in the system temporary directory with our script in it.
-            scriptFile = ws.createTextTempFile(build.getProject().getName(), ".sh", script, false);
+            scriptFile = ws.createTextTempFile(prefix, ".sh", script, false);
 
             // Then we execute the script, putting STDOUT in commandOutput.
             returnCode = launcher.launch().cmds(buildCommandLine(scriptFile))
