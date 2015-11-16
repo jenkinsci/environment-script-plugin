@@ -3,8 +3,7 @@
     <j:when test="${descriptor.isMatrix(request)}">
       <f:entry title="${%Run only on parent}"
          help="${resURL}/plugin/environment-script/help-onlyRunOnParent.html">
-        <f:checkbox name="onlyRunOnParent"
-                    checked="${instance.shouldOnlyRunOnParent()}" />
+        <f:checkbox name="onlyRunOnParent" checked="${instance.shouldOnlyRunOnParent()}" />
       </f:entry>
     </j:when>
     <j:otherwise>
@@ -14,10 +13,17 @@
     </j:otherwise>
   </j:choose>
 
+  <f:entry name="scriptType" title="Choose Script Type" field="scriptType">
+    <select name="scriptType">
+        <f:option value="unixScript" selected="${instance.getScriptType() == 'unixScript'}">Unix script</f:option>
+        <f:option value="powerShell" selected="${instance.getScriptType() == 'powerShell'}">Powershell script</f:option>
+        <f:option value="batchScript" selected="${instance.getScriptType() == 'batchScript'}">Batch script</f:option>
+    </select>
+  </f:entry>
+
   <f:entry title="${%Script content}"
            description="This script is executed before each build, and any output it produces will be evaluated as environment variables (key=value)."
            help="${resURL}/plugin/environment-script/help-script.html">
-    <f:textarea name="script"
-                value="${instance.getScript()}" />
+    <f:textarea name="script" value="${instance.getScript()}" />
   </f:entry>
 </j:jelly>

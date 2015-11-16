@@ -17,6 +17,7 @@ import hudson.model.Descriptor;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.tasks.Shell;
+import hudson.util.ListBoxModel;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -34,6 +35,12 @@ import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
+import com.lookout.jenkins.commands.Commands;
+import com.lookout.jenkins.commands.PowerShell;
+import com.lookout.jenkins.commands.Shebangs;
+import com.lookout.jenkins.commands.UnixShell;
+import com.lookout.jenkins.commands.WinBatch;
+
 /**
  * Runs a specific chunk of code before each build, parsing output for new environment variables.
  *
@@ -41,11 +48,13 @@ import org.kohsuke.stapler.StaplerRequest;
  */
 public class EnvironmentScript extends BuildWrapper implements MatrixAggregatable {
     private final String script;
+    private final String scriptType;
     private final boolean onlyRunOnParent;
 
     @DataBoundConstructor
-    public EnvironmentScript(String script, boolean onlyRunOnParent) {
+    public EnvironmentScript(String script, String scriptType, boolean onlyRunOnParent) {
         this.script = script;
+        this.scriptType = scriptType;
         this.onlyRunOnParent = onlyRunOnParent;
     }
 
@@ -54,6 +63,14 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
      */
     public String getScript() {
         return script;
+    }
+
+    /**
+     * We will use this from the <tt>config.jelly</tt>.
+     * @return
+     */
+    public String getScriptType() {
+        return scriptType;
     }
 
     /**
@@ -103,10 +120,18 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
         ByteArrayOutputStream commandOutput = new ByteArrayOutputStream();
         int returnCode = -1;
         try {
+            // Calculate extension
+            String extension = ".sh";
+            if (Commands.POWER_SHELL.equals(scriptType)) {
+                extension = ".ps1";
+            } else if (Commands.BATCH_SCRIPT.equals(scriptType)) {
+                extension = ".bat";
+            }
+
             // Make sure prefix will always be more than 3 letters
             final String prefix = "env-" + build.getProject().getName();
             // Create a file in the system temporary directory with our script in it.
-            scriptFile = ws.createTextTempFile(prefix, ".sh", script, false);
+            scriptFile = ws.createTextTempFile(prefix, extension, script, false);
 
             // Then we execute the script, putting STDOUT in commandOutput.
             returnCode = launcher.launch().cmds(buildCommandLine(scriptFile))
@@ -173,25 +198,15 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
 
     // Mostly stolen from hudson.tasks.Shell.buildCommandLine.
     public String[] buildCommandLine(FilePath scriptFile) {
-        // Respect shebangs
-        if (script.startsWith("#!")) {
-            // Find first line, or just entire script if it's one line.
-            int end = script.indexOf('\n');
-            if (end < 0)
-                end = script.length();
-
-            String shell = script.substring(0, end).trim();
-            shell = shell.substring(2);
-
-            List<String> args = new ArrayList<String>(Arrays.asList(Util.tokenize(shell)));
-            args.add(scriptFile.getRemote());
-
-            return args.toArray(new String[args.size()]);
+        if (Commands.POWER_SHELL.equals(scriptType)) {
+            return PowerShell.buildCommandLine(scriptFile);
+        } else if (Commands.BATCH_SCRIPT.equals(scriptType)) {
+            return WinBatch.buildCommandLine(scriptFile);
         } else {
-            Shell.DescriptorImpl shellDescriptor = Jenkins.getInstance()
-                    .getDescriptorByType(Shell.DescriptorImpl.class);
-            String shell = shellDescriptor.getShellOrDefault(scriptFile.getChannel());
-            return new String[] { shell, "-xe", scriptFile.getRemote() };
+            if (Commands.isShebangs(script)) {
+                return Shebangs.parseCommandLine(script, scriptFile);
+            }
+            return UnixShell.buildCommandLine(scriptFile);
         }
     }
 

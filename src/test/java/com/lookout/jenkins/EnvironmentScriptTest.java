@@ -26,15 +26,17 @@ public class EnvironmentScriptTest {
         public FreeStyleBuild build;
         public TaskListener listener;
 
-        public TestJob(String script) throws Exception {
+        public TestJob(String script, String scriptType) throws Exception {
             listener = new StreamTaskListener(System.err, Charset.defaultCharset());
             project = jenkins.createFreeStyleProject();
-            project.getBuildWrappersList().add(new EnvironmentScript(script, false));
+            project.getBuildWrappersList().add(new EnvironmentScript(script, scriptType, false));
             project.setScm(new SingleFileSCM("envs", "foo_var=bar"));
             build = jenkins.buildAndAssertSuccess(project);
             jenkins.waitUntilNoActivity();
         }
     }
+
+    final static String UNIX_SCRIPT = "unixScript";
 
     final static String SCRIPT_SIMPLE_VARIABLES =
             "echo var1=one\n"
@@ -60,13 +62,13 @@ public class EnvironmentScriptTest {
                     + "hello=world";
 
     public void testWithEmptyScript() throws Exception {
-        TestJob job = new TestJob("");
+        TestJob job = new TestJob("", UNIX_SCRIPT);
         assertEquals(Result.SUCCESS, job.build.getResult());
     }
 
     @Test
     public void testWithSimpleVariables() throws Exception {
-        TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES);
+        TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES, UNIX_SCRIPT);
         assertEquals(Result.SUCCESS, job.build.getResult());
 
         EnvVars vars = job.build.getEnvironment(job.listener);
@@ -77,7 +79,7 @@ public class EnvironmentScriptTest {
 
     @Test
     public void testWithDependentVariables() throws Exception {
-        TestJob job = new TestJob(SCRIPT_DEPENDENT_VARIABLES);
+        TestJob job = new TestJob(SCRIPT_DEPENDENT_VARIABLES, UNIX_SCRIPT);
         assertEquals(Result.SUCCESS, job.build.getResult());
 
         EnvVars vars = job.build.getEnvironment(job.listener);
@@ -89,7 +91,7 @@ public class EnvironmentScriptTest {
 
     @Test
     public void testWithOverridenVariables() throws Exception {
-        TestJob job = new TestJob(SCRIPT_OVERRIDDEN_VARIABLES);
+        TestJob job = new TestJob(SCRIPT_OVERRIDDEN_VARIABLES, UNIX_SCRIPT);
         assertEquals(Result.SUCCESS, job.build.getResult());
 
         EnvVars vars = job.build.getEnvironment(job.listener);
@@ -99,14 +101,14 @@ public class EnvironmentScriptTest {
 
     @Test
     public void testReadingFileFromSCM() throws Exception {
-        TestJob job = new TestJob("cat envs");
+        TestJob job = new TestJob("cat envs", UNIX_SCRIPT);
         assertEquals(Result.SUCCESS, job.build.getResult());
         assertEquals("bar", job.build.getEnvironment(job.listener).get("foo_var"));
     }
 
     @Test
     public void testWorkingDirectory() throws Exception {
-        TestJob job = new TestJob("echo hi >was_run");
+        TestJob job = new TestJob("echo hi >was_run", UNIX_SCRIPT);
 
         // Make sure that the $PWD of the script is $WORKSPACE.
         assertTrue(job.build.getWorkspace().child("was_run").exists());
@@ -114,7 +116,7 @@ public class EnvironmentScriptTest {
 
     @Test
     public void testWithShebang() throws Exception {
-        TestJob job = new TestJob(SCRIPT_SHEBANG);
+        TestJob job = new TestJob(SCRIPT_SHEBANG, UNIX_SCRIPT);
 
         assertEquals(Result.SUCCESS, job.build.getResult());
         EnvVars vars = job.build.getEnvironment(job.listener);
@@ -122,7 +124,7 @@ public class EnvironmentScriptTest {
     }
 
         public void testUTFHandling () throws Exception {
-        TestJob job = new TestJob(SCRIPT_UTF8);
+        TestJob job = new TestJob(SCRIPT_UTF8, UNIX_SCRIPT);
         assertEquals(Result.SUCCESS, job.build.getResult());
 
         EnvVars vars = job.build.getEnvironment(job.listener);
