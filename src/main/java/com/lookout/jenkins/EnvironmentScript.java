@@ -172,8 +172,16 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
         final Map<String, String> envAdditions = new HashMap<String, String>(), envOverrides = new HashMap<String, String>();
         for (String key : properties.stringPropertyNames()) {
             String value = properties.getProperty(key);
-            listener.getLogger().println(
-                    "[environment-script] Adding variable '" + key + "' with value '" + value + "'");
+            String l = "[environment-script] Adding variable '" + key + "'";
+
+            EnvVars envVars = new EnvVars();
+            envVars = build.getEnvironment(listener);
+
+            // if the env var ENV_SCRIPT_PLUGIN_HIDE_VALS is set, do not output the value
+            if (envVars.get("ENV_SCRIPT_PLUGIN_HIDE_VALS") == null)
+                l += " with value '" + value + "'";
+
+            listener.getLogger().println(l);
 
             if (key.indexOf('+') > 0)
                 envOverrides.put(key, value);
