@@ -3,6 +3,9 @@ package com.lookout.jenkins;
 import static org.junit.Assert.*;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import hudson.EnvVars;
 import hudson.model.FreeStyleBuild;
@@ -16,6 +19,8 @@ import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.SingleFileSCM;
 
+import com.kenai.jffi.Array;
+
 public class EnvironmentScriptTest {
 
     @Rule
@@ -26,10 +31,10 @@ public class EnvironmentScriptTest {
         public FreeStyleBuild build;
         public TaskListener listener;
 
-        public TestJob(String script, String scriptType) throws Exception {
+        public TestJob(String script, String scriptType, boolean hideEnvironmentVariablesValues) throws Exception {
             listener = new StreamTaskListener(System.err, Charset.defaultCharset());
             project = jenkins.createFreeStyleProject();
-            project.getBuildWrappersList().add(new EnvironmentScript(script, scriptType, false));
+            project.getBuildWrappersList().add(new EnvironmentScript(script, scriptType, false, hideEnvironmentVariablesValues));
             project.setScm(new SingleFileSCM("envs", "foo_var=bar"));
             build = jenkins.buildAndAssertSuccess(project);
             jenkins.waitUntilNoActivity();
@@ -62,13 +67,13 @@ public class EnvironmentScriptTest {
                     + "hello=world";
 
     public void testWithEmptyScript() throws Exception {
-        TestJob job = new TestJob("", UNIX_SCRIPT);
+        TestJob job = new TestJob("", UNIX_SCRIPT, true);
         assertEquals(Result.SUCCESS, job.build.getResult());
     }
 
     @Test
     public void testWithSimpleVariables() throws Exception {
-        TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES, UNIX_SCRIPT);
+        TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES, UNIX_SCRIPT, true);
         assertEquals(Result.SUCCESS, job.build.getResult());
 
         EnvVars vars = job.build.getEnvironment(job.listener);
@@ -79,7 +84,7 @@ public class EnvironmentScriptTest {
 
     @Test
     public void testWithDependentVariables() throws Exception {
-        TestJob job = new TestJob(SCRIPT_DEPENDENT_VARIABLES, UNIX_SCRIPT);
+        TestJob job = new TestJob(SCRIPT_DEPENDENT_VARIABLES, UNIX_SCRIPT, true);
         assertEquals(Result.SUCCESS, job.build.getResult());
 
         EnvVars vars = job.build.getEnvironment(job.listener);
@@ -91,7 +96,7 @@ public class EnvironmentScriptTest {
 
     @Test
     public void testWithOverridenVariables() throws Exception {
-        TestJob job = new TestJob(SCRIPT_OVERRIDDEN_VARIABLES, UNIX_SCRIPT);
+        TestJob job = new TestJob(SCRIPT_OVERRIDDEN_VARIABLES, UNIX_SCRIPT, true);
         assertEquals(Result.SUCCESS, job.build.getResult());
 
         EnvVars vars = job.build.getEnvironment(job.listener);
@@ -101,14 +106,14 @@ public class EnvironmentScriptTest {
 
     @Test
     public void testReadingFileFromSCM() throws Exception {
-        TestJob job = new TestJob("cat envs", UNIX_SCRIPT);
+        TestJob job = new TestJob("cat envs", UNIX_SCRIPT, true);
         assertEquals(Result.SUCCESS, job.build.getResult());
         assertEquals("bar", job.build.getEnvironment(job.listener).get("foo_var"));
     }
 
     @Test
     public void testWorkingDirectory() throws Exception {
-        TestJob job = new TestJob("echo hi >was_run", UNIX_SCRIPT);
+        TestJob job = new TestJob("echo hi >was_run", UNIX_SCRIPT, true);
 
         // Make sure that the $PWD of the script is $WORKSPACE.
         assertTrue(job.build.getWorkspace().child("was_run").exists());
@@ -116,7 +121,7 @@ public class EnvironmentScriptTest {
 
     @Test
     public void testWithShebang() throws Exception {
-        TestJob job = new TestJob(SCRIPT_SHEBANG, UNIX_SCRIPT);
+        TestJob job = new TestJob(SCRIPT_SHEBANG, UNIX_SCRIPT, true);
 
         assertEquals(Result.SUCCESS, job.build.getResult());
         EnvVars vars = job.build.getEnvironment(job.listener);
@@ -124,10 +129,32 @@ public class EnvironmentScriptTest {
     }
 
         public void testUTFHandling () throws Exception {
-        TestJob job = new TestJob(SCRIPT_UTF8, UNIX_SCRIPT);
+        TestJob job = new TestJob(SCRIPT_UTF8, UNIX_SCRIPT, true);
         assertEquals(Result.SUCCESS, job.build.getResult());
 
         EnvVars vars = job.build.getEnvironment(job.listener);
         assertEquals("mąż", vars.get("UTFstr"));
+    }
+
+    @Test
+    public void testHideEnvironmentVariablesValues() throws Exception {
+        TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES, UNIX_SCRIPT, true);
+        assertEquals(Result.SUCCESS, job.build.getResult());
+        List<String> logs = job.build.getLog(10);
+
+        assertTrue(logs.contains(new String("[environment-script] Adding variable 'var1'")));
+        assertTrue(logs.contains(new String("[environment-script] Adding variable 'var2'")));
+        assertTrue(logs.contains(new String("[environment-script] Adding variable 'var3'")));
+    }
+
+    @Test
+    public void testShowEnvironmentVariablesValues() throws Exception {
+        TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES, UNIX_SCRIPT, false);
+        assertEquals(Result.SUCCESS, job.build.getResult());
+        List<String> logs = job.build.getLog(10);
+
+        assertTrue(logs.contains(new String("[environment-script] Adding variable 'var1' with value 'one'")));
+        assertTrue(logs.contains(new String("[environment-script] Adding variable 'var2' with value 'two'")));
+        assertTrue(logs.contains(new String("[environment-script] Adding variable 'var3' with value 'three'")));
     }
 }

@@ -16,7 +16,7 @@ public class UnixShell {
 
         List<String> cml = new ArrayList<String>();
         cml.add(shell);
-        cml.add("-xe");
+        cml.add("-e");
         cml.add(scriptFile.getRemote());
 
         return (String[]) cml.toArray(new String[cml.size()]);

@@ -42,7 +42,7 @@ public class EnvironmentScriptMatrixTest {
             project.setExecutionStrategy(new DefaultMatrixExecutionStrategyImpl(true, null, null, null));
 
             project.setAxes(new AxisList(new Axis("axis", "value1", "value2")));
-            project.getBuildWrappersList().add(new EnvironmentScript(script, scriptType, onlyRunOnParent));
+            project.getBuildWrappersList().add(new EnvironmentScript(script, scriptType, onlyRunOnParent, hideGeneratedValue));
             countBuilder = new CountBuilder();
             project.getBuildersList().add(countBuilder);
             build = jenkins.buildAndAssertSuccess(project);
@@ -65,6 +65,7 @@ public class EnvironmentScriptMatrixTest {
     File tempDir = Files.createTempDir();
     String script = String.format(SCRIPT_COUNTER, tempDir.getPath());
     String scriptType = "unixScript";
+    boolean hideGeneratedValue = Boolean.TRUE;
 
     @Test
     public void testWithParentOnly() throws Exception {

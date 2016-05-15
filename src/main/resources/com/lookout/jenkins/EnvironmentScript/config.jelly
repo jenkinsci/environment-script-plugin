@@ -1,17 +1,21 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
   <j:choose>
     <j:when test="${descriptor.isMatrix(request)}">
-      <f:entry title="${%Run only on parent}"
-         help="${resURL}/plugin/environment-script/help-onlyRunOnParent.html">
-        <f:checkbox name="onlyRunOnParent" checked="${instance.shouldOnlyRunOnParent()}" />
+      <f:entry title="Run only on parent" field="runOnlyOnParent">
+        <f:checkbox name="runOnlyOnParent" checked="${instance.isRunOnlyOnParent()}" />
       </f:entry>
     </j:when>
     <j:otherwise>
       <f:invisibleEntry>
-        <input type="hidden" name="onlyRunOnParent" value="false" />
+        <input type="hidden" name="runOnlyOnParent" value="false" />
       </f:invisibleEntry>
     </j:otherwise>
   </j:choose>
+
+  <f:entry title="Hide Environment Variables Values" field="hideEnvironmentVariablesValues">
+    <f:checkbox name="hideEnvironmentVariablesValues" checked="${instance.isHideEnvironmentVariablesValues()}" />
+  </f:entry>
 
   <f:entry name="scriptType" title="Choose Script Type" field="scriptType">
     <select name="scriptType">
@@ -21,9 +25,8 @@
     </select>
   </f:entry>
 
-  <f:entry title="${%Script content}"
-           description="This script is executed before each build, and any output it produces will be evaluated as environment variables (key=value)."
-           help="${resURL}/plugin/environment-script/help-script.html">
+  <f:entry title="Script content" field="script">
     <f:textarea name="script" value="${instance.getScript()}" />
   </f:entry>
+
 </j:jelly>
