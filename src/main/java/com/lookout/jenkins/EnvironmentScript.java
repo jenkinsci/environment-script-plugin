@@ -45,17 +45,20 @@ import com.lookout.jenkins.commands.WinBatch;
  * Runs a specific chunk of code before each build, parsing output for new environment variables.
  *
  * @author Jørgen P. Tjernø
+ * @author dawidmalina@gmail.com
  */
 public class EnvironmentScript extends BuildWrapper implements MatrixAggregatable {
     private final String script;
     private final String scriptType;
-    private final boolean onlyRunOnParent;
+    private final boolean runOnlyOnParent;
+    private final boolean hideEnvironmentVariablesValues;
 
     @DataBoundConstructor
-    public EnvironmentScript(String script, String scriptType, boolean onlyRunOnParent) {
+    public EnvironmentScript(String script, String scriptType, boolean runOnlyOnParent, boolean hideEnvironmentVariablesValues) {
         this.script = script;
         this.scriptType = scriptType;
-        this.onlyRunOnParent = onlyRunOnParent;
+        this.runOnlyOnParent = runOnlyOnParent;
+        this.hideEnvironmentVariablesValues = hideEnvironmentVariablesValues;
     }
 
     /**
@@ -77,8 +80,12 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
      * @return Whether or not we only run this on the {@link MatrixBuild} parent, or on the individual {@link MatrixRun}
      *         s.
      */
-    public boolean shouldOnlyRunOnParent() {
-        return onlyRunOnParent;
+    public boolean isRunOnlyOnParent() {
+        return runOnlyOnParent;
+    }
+
+    public boolean isHideEnvironmentVariablesValues() {
+        return hideEnvironmentVariablesValues;
     }
 
     @SuppressWarnings("rawtypes")
@@ -86,7 +93,7 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
     public Environment setUp(AbstractBuild build,
             final Launcher launcher,
             final BuildListener listener) throws IOException, InterruptedException {
-        if ((build instanceof MatrixRun) && shouldOnlyRunOnParent()) {
+        if ((build instanceof MatrixRun) && isRunOnlyOnParent()) {
             // If this is a matrix run and we have the onlyRunOnParent option
             // enabled, we just retrieve the persisted environment from the
             // PersistedEnvironment Action.
@@ -172,16 +179,18 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
         final Map<String, String> envAdditions = new HashMap<String, String>(), envOverrides = new HashMap<String, String>();
         for (String key : properties.stringPropertyNames()) {
             String value = properties.getProperty(key);
-            String l = "[environment-script] Adding variable '" + key + "'";
+            StringBuilder output = new StringBuilder();
+            output.append("[environment-script] Adding variable '").append(key).append("'");
 
             EnvVars envVars = new EnvVars();
             envVars = build.getEnvironment(listener);
 
-            // if the env var ENV_SCRIPT_PLUGIN_HIDE_VALS is set, do not output the value
-            if (envVars.get("ENV_SCRIPT_PLUGIN_HIDE_VALS") == null)
-                l += " with value '" + value + "'";
+            // If hideGeneratedValue is set to true we will hide generated value from log message
+            if (!isHideEnvironmentVariablesValues()) {
+                output.append(" with value '").append(value).append("'");
+            }
 
-            listener.getLogger().println(l);
+            listener.getLogger().println(output.toString());
 
             if (key.indexOf('+') > 0)
                 envOverrides.put(key, value);
@@ -227,7 +236,7 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
      * calculation.
      */
     public MatrixAggregator createAggregator(MatrixBuild build, Launcher launcher, BuildListener listener) {
-        if (!shouldOnlyRunOnParent()) {
+        if (!isRunOnlyOnParent()) {
             return null;
         }
 
