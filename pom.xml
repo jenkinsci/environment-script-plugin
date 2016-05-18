@@ -32,7 +32,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <release.maven.plugin.version>2.5.1</release.maven.plugin.version>
+        <release.maven.plugin.version>2.5.3</release.maven.plugin.version>
     </properties>
 
     <build>
