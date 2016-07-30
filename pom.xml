@@ -6,7 +6,7 @@
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
         <!-- Which version of Jenkins is this plugin built against? -->
-        <version>1.565</version>
+        <version>1.642.4</version>
     </parent>
 
     <groupId>com.lookout.jenkins</groupId>
@@ -79,8 +79,13 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>matrix-project</artifactId>
-            <version>1.4</version>
+            <version>1.6</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.mjdetullio.jenkins.plugins</groupId>
+            <artifactId>multi-branch-project-plugin</artifactId>
+            <version>0.5.1</version>
+         </dependency>
         <!-- Test Dependencies -->
         <dependency>
             <groupId>junit</groupId>

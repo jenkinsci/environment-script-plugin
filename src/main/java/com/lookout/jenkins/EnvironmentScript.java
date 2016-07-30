@@ -35,6 +35,8 @@ import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
+import com.github.mjdetullio.jenkins.plugins.multibranch.MatrixMultiBranchProject;
+
 import com.lookout.jenkins.commands.Commands;
 import com.lookout.jenkins.commands.PowerShell;
 import com.lookout.jenkins.commands.Shebangs;
@@ -228,7 +230,7 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
     }
 
     /**
-     * Create an aggregator that will calculate the environment once iff onlyRunOnParent is true.
+     * Create an aggregator that will calculate the environment once if onlyRunOnParent is true.
      *
      * The aggregator we return is called on the parent job for matrix jobs. In it we generate the environment once and
      * persist it in an Action (of type {@link PersistedEnvironment}) if the job has onlyRunOnParent enabled. The
@@ -287,7 +289,11 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
         }
 
         public boolean isMatrix(StaplerRequest request) {
-            return (request.findAncestorObject(AbstractProject.class) instanceof MatrixProject);
+            if (request.findAncestorObject(MatrixMultiBranchProject.class) != null ||
+                request.findAncestorObject(MatrixProject.class) != null) {
+                return Boolean.TRUE;
+            }
+            return Boolean.FALSE;
         }
     }
 }
