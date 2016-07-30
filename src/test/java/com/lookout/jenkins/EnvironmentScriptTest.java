@@ -3,8 +3,6 @@ package com.lookout.jenkins;
 import static org.junit.Assert.*;
 
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import hudson.EnvVars;
@@ -18,8 +16,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.SingleFileSCM;
-
-import com.kenai.jffi.Array;
 
 public class EnvironmentScriptTest {
 
