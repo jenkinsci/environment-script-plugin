@@ -35,7 +35,7 @@ import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
-import com.github.mjdetullio.jenkins.plugins.multibranch.MatrixMultiBranchProject;
+/** import com.github.mjdetullio.jenkins.plugins.multibranch.MatrixMultiBranchProject; **/
 
 import com.lookout.jenkins.commands.Commands;
 import com.lookout.jenkins.commands.PowerShell;
@@ -289,10 +289,6 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
         }
 
         public boolean isMatrix(StaplerRequest request) {
-            if (request.findAncestorObject(MatrixMultiBranchProject.class) != null ||
-                request.findAncestorObject(MatrixProject.class) != null) {
-                return Boolean.TRUE;
-            }
             return Boolean.FALSE;
         }
     }
