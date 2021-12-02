@@ -9,33 +9,22 @@ import hudson.matrix.MatrixAggregatable;
 import hudson.matrix.MatrixAggregator;
 import hudson.matrix.MatrixRun;
 import hudson.matrix.MatrixBuild;
-import hudson.matrix.MatrixProject;
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
-import hudson.tasks.Shell;
-import hudson.util.ListBoxModel;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import jenkins.model.Jenkins;
-
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
-
-/** import com.github.mjdetullio.jenkins.plugins.multibranch.MatrixMultiBranchProject; **/
 
 import com.lookout.jenkins.commands.Commands;
 import com.lookout.jenkins.commands.PowerShell;
@@ -44,7 +33,8 @@ import com.lookout.jenkins.commands.UnixShell;
 import com.lookout.jenkins.commands.WinBatch;
 
 /**
- * Runs a specific chunk of code before each build, parsing output for new environment variables.
+ * Runs a specific chunk of code before each build, parsing output for new
+ * environment variables.
  *
  * @author Jørgen P. Tjernø
  * @author dawidmalina@gmail.com
@@ -56,7 +46,8 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
     private final boolean hideEnvironmentVariablesValues;
 
     @DataBoundConstructor
-    public EnvironmentScript(String script, String scriptType, boolean runOnlyOnParent, boolean hideEnvironmentVariablesValues) {
+    public EnvironmentScript(String script, String scriptType, boolean runOnlyOnParent,
+            boolean hideEnvironmentVariablesValues) {
         this.script = script;
         this.scriptType = scriptType;
         this.runOnlyOnParent = runOnlyOnParent;
@@ -72,6 +63,7 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
 
     /**
      * We will use this from the <tt>config.jelly</tt>.
+     * 
      * @return
      */
     public String getScriptType() {
@@ -79,7 +71,8 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
     }
 
     /**
-     * @return Whether or not we only run this on the {@link MatrixBuild} parent, or on the individual {@link MatrixRun}
+     * @return Whether or not we only run this on the {@link MatrixBuild} parent, or
+     *         on the individual {@link MatrixRun}
      *         s.
      */
     public boolean isRunOnlyOnParent() {
@@ -105,7 +98,8 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
                 if (persisted != null) {
                     return persisted.getEnvironment();
                 } else {
-                    listener.error("[environment-script] Unable to load persisted environment from matrix parent job, not injecting any variables");
+                    listener.error(
+                            "[environment-script] Unable to load persisted environment from matrix parent job, not injecting any variables");
                     return new Environment() {
                     };
                 }
@@ -176,9 +170,11 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
             return null;
         }
 
-        // We sort overrides and additions into two different buckets, because they have to be processed in sequence.
+        // We sort overrides and additions into two different buckets, because they have
+        // to be processed in sequence.
         // See hudson.EnvVars.override for how this logic works.
-        final Map<String, String> envAdditions = new HashMap<String, String>(), envOverrides = new HashMap<String, String>();
+        final Map<String, String> envAdditions = new HashMap<String, String>(),
+                envOverrides = new HashMap<String, String>();
         for (String key : properties.stringPropertyNames()) {
             String value = properties.getProperty(key);
             StringBuilder output = new StringBuilder();
@@ -187,7 +183,8 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
             EnvVars envVars = new EnvVars();
             envVars = build.getEnvironment(listener);
 
-            // If hideGeneratedValue is set to true we will hide generated value from log message
+            // If hideGeneratedValue is set to true we will hide generated value from log
+            // message
             if (!isHideEnvironmentVariablesValues()) {
                 output.append(" with value '").append(value).append("'");
             }
@@ -230,11 +227,15 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
     }
 
     /**
-     * Create an aggregator that will calculate the environment once if onlyRunOnParent is true.
+     * Create an aggregator that will calculate the environment once if
+     * onlyRunOnParent is true.
      *
-     * The aggregator we return is called on the parent job for matrix jobs. In it we generate the environment once and
-     * persist it in an Action (of type {@link PersistedEnvironment}) if the job has onlyRunOnParent enabled. The
-     * subjobs ("configuration runs") will retrieve this and apply it to their environment, without performing the
+     * The aggregator we return is called on the parent job for matrix jobs. In it
+     * we generate the environment once and
+     * persist it in an Action (of type {@link PersistedEnvironment}) if the job has
+     * onlyRunOnParent enabled. The
+     * subjobs ("configuration runs") will retrieve this and apply it to their
+     * environment, without performing the
      * calculation.
      */
     public MatrixAggregator createAggregator(MatrixBuild build, Launcher launcher, BuildListener listener) {
@@ -263,7 +264,8 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
     }
 
     /**
-     * Descriptor for {@link EnvironmentScript}. Used as a singleton. The class is marked as public so that it can be
+     * Descriptor for {@link EnvironmentScript}. Used as a singleton. The class is
+     * marked as public so that it can be
      * accessed from views.
      *
      */

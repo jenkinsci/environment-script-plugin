@@ -38,7 +38,6 @@ public class EnvironmentPluginAction implements EnvironmentContributingAction {
             env.putAll(envAdditions);
         }
 
-
         if (envOverrides != null) {
             env.overrideAll(envOverrides);
         }

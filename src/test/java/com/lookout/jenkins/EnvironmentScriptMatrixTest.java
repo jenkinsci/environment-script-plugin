@@ -42,7 +42,8 @@ public class EnvironmentScriptMatrixTest {
             project.setExecutionStrategy(new DefaultMatrixExecutionStrategyImpl(true, null, null, null));
 
             project.setAxes(new AxisList(new Axis("axis", "value1", "value2")));
-            project.getBuildWrappersList().add(new EnvironmentScript(script, scriptType, onlyRunOnParent, hideGeneratedValue));
+            project.getBuildWrappersList()
+                    .add(new EnvironmentScript(script, scriptType, onlyRunOnParent, hideGeneratedValue));
             countBuilder = new CountBuilder();
             project.getBuildersList().add(countBuilder);
             build = jenkins.buildAndAssertSuccess(project);
@@ -50,16 +51,15 @@ public class EnvironmentScriptMatrixTest {
         }
     }
 
-    final static String SCRIPT_COUNTER =
-            "file='%s/counter'\n"
-                    + "if [ -f $file ]; then\n"
-                    + "  let i=$(cat $file)+1\n"
-                    + "else\n"
-                    + "  i=1\n"
-                    + "fi\n"
-                    + "echo 1 >was_run\n"
-                    + "echo $i >$file\n"
-                    + "echo seen=yes";
+    final static String SCRIPT_COUNTER = "file='%s/counter'\n"
+            + "if [ -f $file ]; then\n"
+            + "  i=$(($(cat $file)+1))\n"
+            + "else\n"
+            + "  i=1\n"
+            + "fi\n"
+            + "echo 1 >was_run\n"
+            + "echo $i >$file\n"
+            + "echo seen=yes";
 
     // Generate a random directory that we pass to the shell script.
     File tempDir = Files.createTempDir();
@@ -85,7 +85,8 @@ public class EnvironmentScriptMatrixTest {
     public void testWithEachChild() throws Exception {
         MatrixTestJob job = new MatrixTestJob(script, false);
 
-        // We ensure that this was only run twice - once for each axis combination - but not on the parent.
+        // We ensure that this was only run twice - once for each axis combination - but
+        // not on the parent.
         assertEquals("2", new FilePath(tempDir).child("counter").readToString().trim());
 
         // Then make sure that it was in fact in the combination jobs' workspace.
@@ -97,7 +98,8 @@ public class EnvironmentScriptMatrixTest {
     private void buildAndAssert(MatrixTestJob job) throws Exception {
         assertEquals(Result.SUCCESS, job.build.getResult());
 
-        // Make sure that the environment variables set in the script are properly propagated.
+        // Make sure that the environment variables set in the script are properly
+        // propagated.
         assertEquals("yes", job.build.getEnvironment(job.listener).get("seen"));
         // Make sure that the builder was executed twice, once for each axis value.
         assertEquals(2, job.countBuilder.getCount());
