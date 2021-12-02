@@ -30,7 +30,8 @@ public class EnvironmentScriptTest {
         public TestJob(String script, String scriptType, boolean hideEnvironmentVariablesValues) throws Exception {
             listener = new StreamTaskListener(System.err, Charset.defaultCharset());
             project = jenkins.createFreeStyleProject();
-            project.getBuildWrappersList().add(new EnvironmentScript(script, scriptType, false, hideEnvironmentVariablesValues));
+            project.getBuildWrappersList()
+                    .add(new EnvironmentScript(script, scriptType, false, hideEnvironmentVariablesValues));
             project.setScm(new SingleFileSCM("envs", "foo_var=bar"));
             build = jenkins.buildAndAssertSuccess(project);
             jenkins.waitUntilNoActivity();
@@ -39,28 +40,23 @@ public class EnvironmentScriptTest {
 
     final static String UNIX_SCRIPT = "unixScript";
 
-    final static String SCRIPT_SIMPLE_VARIABLES =
-            "echo var1=one\n"
-                    + "echo var2=two\n"
-                    + "echo var3=three";
+    final static String SCRIPT_SIMPLE_VARIABLES = "echo var1=one\n"
+            + "echo var2=two\n"
+            + "echo var3=three";
 
-    final static String SCRIPT_DEPENDENT_VARIABLES =
-            "echo var1=one\n"
-                    + "echo var2='$var1 two'\n"
-                    + "echo var3='yo $var4'\n"
-                    + "echo var4='three ${var2}'";
+    final static String SCRIPT_DEPENDENT_VARIABLES = "echo var1=one\n"
+            + "echo var2='$var1 two'\n"
+            + "echo var3='yo $var4'\n"
+            + "echo var4='three ${var2}'";
 
-    final static String SCRIPT_OVERRIDDEN_VARIABLES =
-            "echo var1=one\n"
-                    + "echo var1+something='not one'\n"
-                    + "echo var2+something='two'";
+    final static String SCRIPT_OVERRIDDEN_VARIABLES = "echo var1=one\n"
+            + "echo var1+something='not one'\n"
+            + "echo var2+something='two'";
 
-        final static String SCRIPT_UTF8 =
-                "echo UTFstr=mąż";
+    final static String SCRIPT_UTF8 = "echo UTFstr=mąż";
 
-    final static String SCRIPT_SHEBANG =
-            "#!/bin/cat\n"
-                    + "hello=world";
+    final static String SCRIPT_SHEBANG = "#!/bin/cat\n"
+            + "hello=world";
 
     public void testWithEmptyScript() throws Exception {
         TestJob job = new TestJob("", UNIX_SCRIPT, true);
@@ -124,7 +120,7 @@ public class EnvironmentScriptTest {
         assertEquals("world", vars.get("hello"));
     }
 
-        public void testUTFHandling () throws Exception {
+    public void testUTFHandling() throws Exception {
         TestJob job = new TestJob(SCRIPT_UTF8, UNIX_SCRIPT, true);
         assertEquals(Result.SUCCESS, job.build.getResult());
 

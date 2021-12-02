@@ -17,5 +17,5 @@ public class PowerShell {
 
         return (String[]) cml.toArray(new String[cml.size()]);
     }
-    
+
 }
