@@ -12,7 +12,7 @@
     <groupId>com.lookout.jenkins</groupId>
     <artifactId>environment-script</artifactId>
     <packaging>hpi</packaging>
-    <version>1.2.6</version>
+    <version>1.3.0-SNAPSHOT</version>
     <name>Environment Script Plugin</name>
     <url>http://wiki.jenkins-ci.org/display/JENKINS/Environment+Script+Plugin</url>
     <developers>
@@ -51,7 +51,7 @@
     <scm>
         <connection>scm:git:git://github.com/jenkinsci/environment-script-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/environment-script-plugin.git</developerConnection>
-        <tag>environment-script-1.2.6</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <distributionManagement>
