@@ -35,7 +35,7 @@ public class EnvironmentScriptMatrixTest {
 
         public MatrixTestJob(String script, boolean onlyRunOnParent) throws Exception {
             listener = new StreamTaskListener(System.err, Charset.defaultCharset());
-            project = jenkins.createMatrixProject();
+            project = jenkins.createProject(MatrixProject.class);
 
             // This forces it to run the builds sequentially, to prevent any
             // race conditions when concurrently updating the 'counter' file.
