@@ -4,3 +4,5 @@
 .idea
 /target/
 /work/
+.vscode
+run.txt
