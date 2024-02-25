@@ -22,7 +22,7 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-
+import hudson.util.ListBoxModel;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -292,6 +292,15 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
 
         public boolean isMatrix(StaplerRequest request) {
             return Boolean.FALSE;
+        }
+
+        public ListBoxModel doFillScriptTypeItems() {
+        ListBoxModel items = new ListBoxModel(
+                new ListBoxModel.Option(Commands.UNIX_SCRIPT_DISPLAY_NAME, Commands.UNIX_SCRIPT),
+                new ListBoxModel.Option(Commands.BATCH_SCRIPT_DISPLAY_NAME, Commands.BATCH_SCRIPT),
+                new ListBoxModel.Option(Commands.PROWER_SHELL_DISPLAY_NAME, Commands.POWER_SHELL)
+        );
+        return items;
         }
     }
 }

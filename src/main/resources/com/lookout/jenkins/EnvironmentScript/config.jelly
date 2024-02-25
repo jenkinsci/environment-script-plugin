@@ -18,12 +18,8 @@
     <f:checkbox name="hideEnvironmentVariablesValues" checked="${instance.isHideEnvironmentVariablesValues()}" />
   </f:entry>
 
-  <f:entry name="scriptType" title="Choose Script Type" field="scriptType">
-    <select name="scriptType">
-        <f:option value="unixScript" selected="${instance.getScriptType() == 'unixScript'}">Unix script</f:option>
-        <f:option value="powerShell" selected="${instance.getScriptType() == 'powerShell'}">Powershell script</f:option>
-        <f:option value="batchScript" selected="${instance.getScriptType() == 'batchScript'}">Batch script</f:option>
-    </select>
+  <f:entry title="Choose Script Type" field="scriptType">
+    <f:select />
   </f:entry>
 
   <f:entry title="Script content" field="script">
