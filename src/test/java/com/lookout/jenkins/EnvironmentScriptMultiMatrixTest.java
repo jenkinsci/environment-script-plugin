@@ -3,13 +3,15 @@ package com.lookout.jenkins;
 import static org.junit.Assert.*;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
-import com.google.common.io.Files;
+import java.nio.file.Files;
 
 import hudson.FilePath;
 import hudson.matrix.Axis;
@@ -62,10 +64,18 @@ public class EnvironmentScriptMultiMatrixTest {
             + "echo seen=yes";
 
     // Generate a random directory that we pass to the shell script.
-    File tempDir = Files.createTempDir();
-    String script = String.format(SCRIPT_COUNTER, tempDir.getPath());
+    File tempDir;
+
+    String script;
     String scriptType = "unixScript";
     boolean hideGeneratedValue = Boolean.TRUE;
+
+    @Before
+    public void setUp() throws IOException {
+        // Generate a random directory that we pass to the shell script.
+        tempDir = Files.createTempDirectory("tmp").toFile();
+        script = String.format(SCRIPT_COUNTER, tempDir);
+    }
 
     @Test
     public void testWithParentOnly() throws Exception {
