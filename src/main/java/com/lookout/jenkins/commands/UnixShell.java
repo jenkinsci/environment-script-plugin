@@ -10,7 +10,7 @@ import jenkins.model.Jenkins;
 public class UnixShell {
 
     public static String[] buildCommandLine(FilePath scriptFile) {
-        Shell.DescriptorImpl shellDescriptor = Jenkins.getInstance()
+        Shell.DescriptorImpl shellDescriptor = Jenkins.get()
                 .getDescriptorByType(Shell.DescriptorImpl.class);
         final String shell = shellDescriptor.getShellOrDefault(scriptFile.getChannel());
 

@@ -55,14 +55,14 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
     }
 
     /**
-     * We'll use this from the <tt>config.jelly</tt>.
+     * We'll use this from the "config.jelly".
      */
     public String getScript() {
         return script;
     }
 
     /**
-     * We will use this from the <tt>config.jelly</tt>.
+     * We will use this from the "config.jelly".
      * 
      * @return
      */
@@ -180,9 +180,6 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
             StringBuilder output = new StringBuilder();
             output.append("[environment-script] Adding variable '").append(key).append("'");
 
-            EnvVars envVars = new EnvVars();
-            envVars = build.getEnvironment(listener);
-
             // If hideGeneratedValue is set to true we will hide generated value from log
             // message
             if (!isHideEnvironmentVariablesValues()) {
@@ -295,12 +292,11 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
         }
 
         public ListBoxModel doFillScriptTypeItems() {
-        ListBoxModel items = new ListBoxModel(
-                new ListBoxModel.Option(Commands.UNIX_SCRIPT_DISPLAY_NAME, Commands.UNIX_SCRIPT),
-                new ListBoxModel.Option(Commands.BATCH_SCRIPT_DISPLAY_NAME, Commands.BATCH_SCRIPT),
-                new ListBoxModel.Option(Commands.PROWER_SHELL_DISPLAY_NAME, Commands.POWER_SHELL)
-        );
-        return items;
+            ListBoxModel items = new ListBoxModel(
+                    new ListBoxModel.Option(Commands.UNIX_SCRIPT_DISPLAY_NAME, Commands.UNIX_SCRIPT),
+                    new ListBoxModel.Option(Commands.BATCH_SCRIPT_DISPLAY_NAME, Commands.BATCH_SCRIPT),
+                    new ListBoxModel.Option(Commands.PROWER_SHELL_DISPLAY_NAME, Commands.POWER_SHELL));
+            return items;
         }
     }
 }
