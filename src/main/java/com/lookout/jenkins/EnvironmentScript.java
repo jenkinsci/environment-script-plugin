@@ -120,6 +120,11 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
         // First we create the script in a temporary directory.
         FilePath ws = build.getWorkspace(), scriptFile = null;
 
+        if (ws == null) {
+            listener.error(Messages.EnvironmentScriptWrapper_WorkspaceIsNull());
+            return null;
+        }
+
         ByteArrayOutputStream commandOutput = new ByteArrayOutputStream();
         int returnCode = -1;
         try {
