@@ -137,7 +137,9 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
             }
 
             // Make sure prefix will always be more than 3 letters
-            final String prefix = "env-" + build.getProject().getName();
+            // Replace the equals sign with an underscore because Windows doesn't accept
+            // this
+            final String prefix = "env-" + build.getProject().getName().replace("=", "_");
             // Create a file in the system temporary directory with our script in it.
             scriptFile = ws.createTextTempFile(prefix, extension, script, false);
 
@@ -300,7 +302,7 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
             ListBoxModel items = new ListBoxModel(
                     new ListBoxModel.Option(Commands.UNIX_SCRIPT_DISPLAY_NAME, Commands.UNIX_SCRIPT),
                     new ListBoxModel.Option(Commands.BATCH_SCRIPT_DISPLAY_NAME, Commands.BATCH_SCRIPT),
-                    new ListBoxModel.Option(Commands.PROWER_SHELL_DISPLAY_NAME, Commands.POWER_SHELL));
+                    new ListBoxModel.Option(Commands.POWER_SHELL_DISPLAY_NAME, Commands.POWER_SHELL));
             return items;
         }
     }

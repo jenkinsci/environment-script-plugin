@@ -2,6 +2,7 @@ package com.lookout.jenkins;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
 import java.nio.charset.Charset;
 import java.util.List;
 
@@ -40,42 +41,54 @@ public class EnvironmentScriptTest {
     }
 
     final static String UNIX_SCRIPT = "unixScript";
-    final static String POWER_SHELL = "powerShell";
+    final static String BATCH_SCRIPT = "batchScript";
 
     final static String SCRIPT_SIMPLE_VARIABLES = "echo var1=one\n"
             + "echo var2=two\n"
             + "echo var3=three";
 
-    final static String SCRIPT_DEPENDENT_VARIABLES = "echo var1=one\n"
+    final static String SCRIPT_DEPENDENT_VARIABLES_UNIX = "echo var1=one\n"
             + "echo var2='$var1 two'\n"
             + "echo var3='yo $var4'\n"
             + "echo var4='three ${var2}'";
 
-    final static String SCRIPT_OVERRIDDEN_VARIABLES = "echo var1=one\n"
+    final static String SCRIPT_DEPENDENT_VARIABLES_BATCH = "echo var1=one\n"
+            + "echo var2=$var1 two\n"
+            + "echo var3=yo $var4\n"
+            + "echo var4=three ${var2}";
+
+    final static String SCRIPT_OVERRIDDEN_VARIABLES_UNIX = "echo var1=one\n"
             + "echo var1+something='not one'\n"
             + "echo var2+something='two'";
 
+    final static String SCRIPT_OVERRIDDEN_VARIABLES_BATCH = "echo var1=one\n"
+            + "echo var1+something=not one\n"
+            + "echo var2+something=two";
+
     final static String SCRIPT_UTF8 = "echo UTFstr=mąż";
 
-    final static String SCRIPT_SHEBANG = "#!/bin/cat\n"
+    final static String SCRIPT_SHEBANG_UNIX = "#!/bin/cat\n"
             + "hello=world";
 
+    // batch script does not have shebang
+    final static String SCRIPT_SHEBANG_BATCH = "echo hello=world";
+
     public void testWithEmptyScript() throws Exception {
-        String script = UNIX_SCRIPT;
+        String scriptType = UNIX_SCRIPT;
         if (Functions.isWindows()) {
-            script = POWER_SHELL;
+            scriptType = BATCH_SCRIPT;
         }
-        TestJob job = new TestJob("", script, true);
+        TestJob job = new TestJob("", scriptType, true);
         assertEquals(Result.SUCCESS, job.build.getResult());
     }
 
     @Test
     public void testWithSimpleVariables() throws Exception {
-        String script = UNIX_SCRIPT;
+        String scriptType = UNIX_SCRIPT;
         if (Functions.isWindows()) {
-            script = POWER_SHELL;
+            scriptType = BATCH_SCRIPT;
         }
-        TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES, script, true);
+        TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES, scriptType, true);
         assertEquals(Result.SUCCESS, job.build.getResult());
 
         EnvVars vars = job.build.getEnvironment(job.listener);
@@ -86,11 +99,13 @@ public class EnvironmentScriptTest {
 
     @Test
     public void testWithDependentVariables() throws Exception {
-        String script = UNIX_SCRIPT;
+        String scriptType = UNIX_SCRIPT;
+        String script = SCRIPT_DEPENDENT_VARIABLES_UNIX;
         if (Functions.isWindows()) {
-            script = POWER_SHELL;
+            scriptType = BATCH_SCRIPT;
+            script = SCRIPT_DEPENDENT_VARIABLES_BATCH;
         }
-        TestJob job = new TestJob(SCRIPT_DEPENDENT_VARIABLES, script, true);
+        TestJob job = new TestJob(script, scriptType, true);
         assertEquals(Result.SUCCESS, job.build.getResult());
 
         EnvVars vars = job.build.getEnvironment(job.listener);
@@ -101,37 +116,41 @@ public class EnvironmentScriptTest {
     }
 
     @Test
-    public void testWithOverridenVariables() throws Exception {
-        String script = UNIX_SCRIPT;
+    public void testWithOverriddenVariables() throws Exception {
+        String scriptType = UNIX_SCRIPT;
+        String script = SCRIPT_OVERRIDDEN_VARIABLES_UNIX;
         if (Functions.isWindows()) {
-            script = POWER_SHELL;
+            scriptType = BATCH_SCRIPT;
+            script = SCRIPT_OVERRIDDEN_VARIABLES_BATCH;
         }
-        TestJob job = new TestJob(SCRIPT_OVERRIDDEN_VARIABLES, script, true);
+        TestJob job = new TestJob(script, scriptType, true);
         assertEquals(Result.SUCCESS, job.build.getResult());
 
         EnvVars vars = job.build.getEnvironment(job.listener);
-        assertEquals("not one:one", vars.get("var1"));
+        assertEquals("not one" + File.pathSeparatorChar + "one", vars.get("var1"));
         assertEquals("two", vars.get("var2"));
     }
 
     @Test
     public void testReadingFileFromSCM() throws Exception {
-        String script = UNIX_SCRIPT;
+        String scriptType = UNIX_SCRIPT;
+        String script = "cat envs";
         if (Functions.isWindows()) {
-            script = POWER_SHELL;
+            scriptType = BATCH_SCRIPT;
+            script = "type envs";
         }
-        TestJob job = new TestJob("cat envs", script, true);
+        TestJob job = new TestJob(script, scriptType, true);
         assertEquals(Result.SUCCESS, job.build.getResult());
         assertEquals("bar", job.build.getEnvironment(job.listener).get("foo_var"));
     }
 
     @Test
     public void testWorkingDirectory() throws Exception {
-        String script = UNIX_SCRIPT;
+        String scriptType = UNIX_SCRIPT;
         if (Functions.isWindows()) {
-            script = POWER_SHELL;
+            scriptType = BATCH_SCRIPT;
         }
-        TestJob job = new TestJob("echo hi >was_run", script, true);
+        TestJob job = new TestJob("echo hi >was_run", scriptType, true);
 
         // Make sure that the $PWD of the script is $WORKSPACE.
         assertTrue(job.build.getWorkspace().child("was_run").exists());
@@ -139,11 +158,13 @@ public class EnvironmentScriptTest {
 
     @Test
     public void testWithShebang() throws Exception {
-        String script = UNIX_SCRIPT;
+        String scriptType = UNIX_SCRIPT;
+        String script = SCRIPT_SHEBANG_UNIX;
         if (Functions.isWindows()) {
-            script = POWER_SHELL;
+            scriptType = BATCH_SCRIPT;
+            script = SCRIPT_SHEBANG_BATCH;
         }
-        TestJob job = new TestJob(SCRIPT_SHEBANG, script, true);
+        TestJob job = new TestJob(script, scriptType, true);
 
         assertEquals(Result.SUCCESS, job.build.getResult());
         EnvVars vars = job.build.getEnvironment(job.listener);
@@ -151,11 +172,11 @@ public class EnvironmentScriptTest {
     }
 
     public void testUTFHandling() throws Exception {
-        String script = UNIX_SCRIPT;
+        String scriptType = UNIX_SCRIPT;
         if (Functions.isWindows()) {
-            script = POWER_SHELL;
+            scriptType = BATCH_SCRIPT;
         }
-        TestJob job = new TestJob(SCRIPT_UTF8, script, true);
+        TestJob job = new TestJob(SCRIPT_UTF8, scriptType, true);
         assertEquals(Result.SUCCESS, job.build.getResult());
 
         EnvVars vars = job.build.getEnvironment(job.listener);
@@ -164,11 +185,11 @@ public class EnvironmentScriptTest {
 
     @Test
     public void testHideEnvironmentVariablesValues() throws Exception {
-        String script = UNIX_SCRIPT;
+        String scriptType = UNIX_SCRIPT;
         if (Functions.isWindows()) {
-            script = POWER_SHELL;
+            scriptType = BATCH_SCRIPT;
         }
-        TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES, script, true);
+        TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES, scriptType, true);
         assertEquals(Result.SUCCESS, job.build.getResult());
         List<String> logs = job.build.getLog(10);
 
@@ -179,11 +200,11 @@ public class EnvironmentScriptTest {
 
     @Test
     public void testShowEnvironmentVariablesValues() throws Exception {
-        String script = UNIX_SCRIPT;
+        String scriptType = UNIX_SCRIPT;
         if (Functions.isWindows()) {
-            script = POWER_SHELL;
+            scriptType = BATCH_SCRIPT;
         }
-        TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES, script, false);
+        TestJob job = new TestJob(SCRIPT_SIMPLE_VARIABLES, scriptType, false);
         assertEquals(Result.SUCCESS, job.build.getResult());
         List<String> logs = job.build.getLog(10);
 

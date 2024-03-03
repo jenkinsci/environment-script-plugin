@@ -14,6 +14,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 import java.nio.file.Files;
 
 import hudson.FilePath;
+import hudson.Functions;
 import hudson.matrix.Axis;
 import hudson.matrix.AxisList;
 import hudson.matrix.MatrixRun;
@@ -43,6 +44,11 @@ public class EnvironmentScriptMultiMatrixTest {
             // race conditions when concurrently updating the 'counter' file.
             project.setExecutionStrategy(new DefaultMatrixExecutionStrategyImpl(true, null, null, null));
 
+            String scriptType = UNIX_SCRIPT;
+            if (Functions.isWindows()) {
+                scriptType = BATCH_SCRIPT;
+            }
+
             project.setAxes(new AxisList(new Axis("axis", "value1", "value2")));
             project.getBuildWrappersList()
                     .add(new EnvironmentScript(script, scriptType, onlyRunOnParent, hideGeneratedValue));
@@ -53,28 +59,45 @@ public class EnvironmentScriptMultiMatrixTest {
         }
     }
 
-    final static String SCRIPT_COUNTER = "file='%s/counter'\n"
+    final static String SCRIPT_COUNTER_UNIX = "file='%s/counter'\n"
             + "if [ -f $file ]; then\n"
             + "  i=$(($(cat $file)+1))\n"
             + "else\n"
             + "  i=1\n"
             + "fi\n"
-            + "echo 1 >was_run\n"
-            + "echo $i >$file\n"
+            + "echo 1 > was_run\n"
+            + "echo $i > $file\n"
+            + "echo seen=yes";
+
+    final static String SCRIPT_COUNTER_BATCH = "@echo off\r\n"
+            + "set file=%s\\counter\r\n"
+            + "if exist %%file%% (\r\n"
+            + "  set /p i=< %%file%%\r\n"
+            + "  set /a i+=1\r\n"
+            + ") else (\r\n"
+            + "  set i=1\r\n"
+            + ")\r\n"
+            + "echo 1 > was_run\r\n"
+            + "echo %%i%% > %%file%%\r\n"
             + "echo seen=yes";
 
     // Generate a random directory that we pass to the shell script.
     File tempDir;
 
     String script;
-    String scriptType = "unixScript";
+    final static String UNIX_SCRIPT = "unixScript";
+    final static String BATCH_SCRIPT = "batchScript";
     boolean hideGeneratedValue = Boolean.TRUE;
 
     @Before
     public void setUp() throws IOException {
         // Generate a random directory that we pass to the shell script.
         tempDir = Files.createTempDirectory("tmp").toFile();
-        script = String.format(SCRIPT_COUNTER, tempDir);
+        String scriptCounter = SCRIPT_COUNTER_UNIX;
+        if (Functions.isWindows()) {
+            scriptCounter = SCRIPT_COUNTER_BATCH;
+        }
+        script = String.format(scriptCounter, tempDir);
     }
 
     @Test
