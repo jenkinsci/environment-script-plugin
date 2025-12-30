@@ -36,7 +36,7 @@
         <changelist>999999-SNAPSHOT</changelist>
         <gitHubRepo>jenkinsci/environment-script-plugin</gitHubRepo>
         <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-        <jenkins.baseline>2.361</jenkins.baseline>
+        <jenkins.baseline>2.479.2</jenkins.baseline>
         <jenkins.version>${jenkins.baseline}.4</jenkins.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <release.maven.plugin.version>2.5.3</release.maven.plugin.version>
