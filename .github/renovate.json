@@ -2,13 +2,5 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "github>jenkinsci/renovate-config"
-  ],
-  "packageRules": [
-    {
-      "description": "Keep the plugin parent compatible with Jenkins 2.361.4 until the Jenkins baseline and BOM are upgraded together.",
-      "matchManagers": ["maven"],
-      "matchPackageNames": ["org.jenkins-ci.plugins:plugin"],
-      "allowedVersions": "<5.0"
-    }
   ]
 }
