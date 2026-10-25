@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Properties;
 import hudson.util.ListBoxModel;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 
 import com.lookout.jenkins.commands.Commands;
 import com.lookout.jenkins.commands.PowerShell;
@@ -294,7 +294,7 @@ public class EnvironmentScript extends BuildWrapper implements MatrixAggregatabl
             return true;
         }
 
-        public boolean isMatrix(StaplerRequest request) {
+        public boolean isMatrix(StaplerRequest2 request) {
             return Boolean.FALSE;
         }
 

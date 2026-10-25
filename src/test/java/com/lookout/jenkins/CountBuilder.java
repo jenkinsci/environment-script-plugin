@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import net.sf.json.JSONObject;
 
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 
 import hudson.Extension;
 import hudson.Launcher;
@@ -33,7 +33,8 @@ public class CountBuilder extends Builder {
 
     @Extension
     public static final class DescriptorImpl extends Descriptor<Builder> {
-        public Builder newInstance(StaplerRequest req, JSONObject data) {
+        @Override
+        public Builder newInstance(StaplerRequest2 req, JSONObject data) {
             throw new UnsupportedOperationException();
         }
 

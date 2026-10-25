@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.88</version>
+        <version>6.2236.v12dd4c483242</version>
         <relativePath />
     </parent>
 
@@ -36,8 +36,8 @@
         <changelist>999999-SNAPSHOT</changelist>
         <gitHubRepo>jenkinsci/environment-script-plugin</gitHubRepo>
         <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-        <jenkins.baseline>2.361</jenkins.baseline>
-        <jenkins.version>${jenkins.baseline}.4</jenkins.version>
+        <jenkins.baseline>2.479</jenkins.baseline>
+        <jenkins.version>${jenkins.baseline}.3</jenkins.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <release.maven.plugin.version>2.5.3</release.maven.plugin.version>
     </properties>
@@ -81,7 +81,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-${jenkins.baseline}.x</artifactId>
-                <version>2102.v854b_fec19c92</version>
+                <version>5043.v855ff4819a_0f</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

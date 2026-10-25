@@ -73,6 +73,23 @@ public class EnvironmentScriptTest {
     // batch script does not have shebang
     final static String SCRIPT_SHEBANG_BATCH = "echo hello=world";
 
+    @Test
+    public void testConfigurationRoundtrip() throws Exception {
+        FreeStyleProject project = jenkins.createFreeStyleProject();
+        String scriptType = Functions.isWindows() ? BATCH_SCRIPT : UNIX_SCRIPT;
+        for (boolean hideValues : new boolean[] {true, false}) {
+            EnvironmentScript wrapper = new EnvironmentScript(SCRIPT_SIMPLE_VARIABLES, scriptType, false, hideValues);
+            project.getBuildWrappersList().clear();
+            project.getBuildWrappersList().add(wrapper);
+
+            jenkins.configRoundtrip(project);
+
+            EnvironmentScript configured = project.getBuildWrappersList().get(EnvironmentScript.class);
+            assertNotNull(configured);
+            jenkins.assertEqualDataBoundBeans(wrapper, configured);
+        }
+    }
+
     public void testWithEmptyScript() throws Exception {
         String scriptType = UNIX_SCRIPT;
         if (Functions.isWindows()) {
