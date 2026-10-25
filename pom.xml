@@ -7,6 +7,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
+        <!-- Keep the 4.x parent for Jenkins 2.361.4: newer majors require the Jakarta EE 9 baseline (2.479+). -->
         <version>4.88</version>
         <relativePath />
     </parent>
