@@ -40,6 +40,7 @@
         <jenkins.version>${jenkins.baseline}.3</jenkins.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <release.maven.plugin.version>2.5.3</release.maven.plugin.version>
+        <ban-junit4-imports.skip>false</ban-junit4-imports.skip>
     </properties>
 
     <scm>
@@ -92,13 +93,6 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>matrix-project</artifactId>
-        </dependency>
-        <!-- Test Dependencies -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.2</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

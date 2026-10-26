@@ -1,18 +1,16 @@
 package com.lookout.jenkins;
 
-import static org.junit.Assert.*;
-
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
 import hudson.FilePath;
+
+import static org.junit.jupiter.api.Assertions.*;
 import hudson.Functions;
 import hudson.matrix.Axis;
 import hudson.matrix.AxisList;
@@ -23,19 +21,20 @@ import hudson.matrix.MatrixProject;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.util.StreamTaskListener;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-public class EnvironmentScriptMatrixTest {
+@WithJenkins
+class EnvironmentScriptMatrixTest {
 
-    @Rule
-    public JenkinsRule jenkins = new JenkinsRule();
+    private JenkinsRule jenkins;
 
     class MatrixTestJob {
-        public MatrixProject project;
-        public CountBuilder countBuilder;
-        public MatrixBuild build;
-        public TaskListener listener;
+        private final MatrixProject project;
+        private final CountBuilder countBuilder;
+        private final MatrixBuild build;
+        private final TaskListener listener;
 
-        public MatrixTestJob(String script, boolean onlyRunOnParent) throws Exception {
+        MatrixTestJob(String script, boolean onlyRunOnParent) throws Exception {
             listener = new StreamTaskListener(System.err, Charset.defaultCharset());
             project = jenkins.createProject(MatrixProject.class);
 
@@ -58,38 +57,41 @@ public class EnvironmentScriptMatrixTest {
         }
     }
 
-    final static String SCRIPT_COUNTER_UNIX = "file='%s/counter'\n"
-            + "if [ -f $file ]; then\n"
-            + "  i=$(($(cat $file)+1))\n"
-            + "else\n"
-            + "  i=1\n"
-            + "fi\n"
-            + "echo 1 > was_run\n"
-            + "echo $i > $file\n"
-            + "echo seen=yes";
+    private final static String SCRIPT_COUNTER_UNIX = """
+        file='%s/counter'
+        if [ -f $file ]; then
+          i=$(($(cat $file)+1))
+        else
+          i=1
+        fi
+        echo 1 > was_run
+        echo $i > $file
+        echo seen=yes""";
 
-    final static String SCRIPT_COUNTER_BATCH = "@echo off\r\n"
-            + "set file=%s\\counter\r\n"
-            + "if exist %%file%% (\r\n"
-            + "  set /p i=< %%file%%\r\n"
-            + "  set /a i+=1\r\n"
-            + ") else (\r\n"
-            + "  set i=1\r\n"
-            + ")\r\n"
-            + "echo 1 > was_run\r\n"
-            + "echo %%i%% > %%file%%\r\n"
-            + "echo seen=yes";
+    private final static String SCRIPT_COUNTER_BATCH = """
+        @echo off
+        set file=%s\\counter
+        if exist %%file%% (
+          set /p i=< %%file%%
+          set /a i+=1
+        ) else (
+          set i=1
+        )
+        echo 1 > was_run
+        echo %%i%% > %%file%%
+        echo seen=yes""";
 
     // Generate a random directory that we pass to the shell script.
-    File tempDir;
+    private File tempDir;
 
-    String script;
-    final static String UNIX_SCRIPT = "unixScript";
-    final static String BATCH_SCRIPT = "batchScript";
-    boolean hideGeneratedValue = Boolean.TRUE;
+    private String script;
+    private final static String UNIX_SCRIPT = "unixScript";
+    private final static String BATCH_SCRIPT = "batchScript";
+    private final boolean hideGeneratedValue = Boolean.TRUE;
 
-    @Before
-    public void setUp() throws IOException {
+    @BeforeEach
+    void setUp(JenkinsRule rule) throws Exception {
+        jenkins = rule;
         // Generate a random directory that we pass to the shell script.
         tempDir = Files.createTempDirectory("tmp").toFile();
         String scriptCounter = SCRIPT_COUNTER_UNIX;
@@ -100,7 +102,7 @@ public class EnvironmentScriptMatrixTest {
     }
 
     @Test
-    public void testWithParentOnly() throws Exception {
+    void testWithParentOnly() throws Exception {
         MatrixTestJob job = new MatrixTestJob(script, true);
         buildAndAssert(job);
 
@@ -114,7 +116,7 @@ public class EnvironmentScriptMatrixTest {
     }
 
     @Test
-    public void testWithEachChild() throws Exception {
+    void testWithEachChild() throws Exception {
         MatrixTestJob job = new MatrixTestJob(script, false);
 
         // We ensure that this was only run twice - once for each axis combination - but
@@ -127,7 +129,7 @@ public class EnvironmentScriptMatrixTest {
             assertTrue(run.getWorkspace().child("was_run").exists());
     }
 
-    private void buildAndAssert(MatrixTestJob job) throws Exception {
+    private static void buildAndAssert(MatrixTestJob job) throws Exception {
         assertEquals(Result.SUCCESS, job.build.getResult());
 
         // Make sure that the environment variables set in the script are properly
