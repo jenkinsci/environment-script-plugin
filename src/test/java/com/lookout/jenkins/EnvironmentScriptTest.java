@@ -1,12 +1,13 @@
 package com.lookout.jenkins;
 
-import static org.junit.Assert.*;
-
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.List;
 
 import hudson.EnvVars;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 import hudson.Functions;
 import hudson.model.FreeStyleBuild;
 import hudson.model.TaskListener;
@@ -14,22 +15,23 @@ import hudson.model.FreeStyleProject;
 import hudson.model.Result;
 import hudson.util.StreamTaskListener;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.SingleFileSCM;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-public class EnvironmentScriptTest {
+@WithJenkins
+class EnvironmentScriptTest {
 
-    @Rule
-    public JenkinsRule jenkins = new JenkinsRule();
+    private JenkinsRule jenkins;
 
     class TestJob {
-        public FreeStyleProject project;
-        public FreeStyleBuild build;
-        public TaskListener listener;
+        private final FreeStyleProject project;
+        private final FreeStyleBuild build;
+        private final TaskListener listener;
 
-        public TestJob(String script, String scriptType, boolean hideEnvironmentVariablesValues) throws Exception {
+        TestJob(String script, String scriptType, boolean hideEnvironmentVariablesValues) throws Exception {
             listener = new StreamTaskListener(System.err, Charset.defaultCharset());
             project = jenkins.createFreeStyleProject();
             project.getBuildWrappersList()
@@ -40,41 +42,51 @@ public class EnvironmentScriptTest {
         }
     }
 
-    final static String UNIX_SCRIPT = "unixScript";
-    final static String BATCH_SCRIPT = "batchScript";
+    private final static String UNIX_SCRIPT = "unixScript";
+    private final static String BATCH_SCRIPT = "batchScript";
 
-    final static String SCRIPT_SIMPLE_VARIABLES = "echo var1=one\n"
-            + "echo var2=two\n"
-            + "echo var3=three";
+    private final static String SCRIPT_SIMPLE_VARIABLES = """
+        echo var1=one
+        echo var2=two
+        echo var3=three""";
 
-    final static String SCRIPT_DEPENDENT_VARIABLES_UNIX = "echo var1=one\n"
-            + "echo var2='$var1 two'\n"
-            + "echo var3='yo $var4'\n"
-            + "echo var4='three ${var2}'";
+    private final static String SCRIPT_DEPENDENT_VARIABLES_UNIX = """
+        echo var1=one
+        echo var2='$var1 two'
+        echo var3='yo $var4'
+        echo var4='three ${var2}'""";
 
-    final static String SCRIPT_DEPENDENT_VARIABLES_BATCH = "echo var1=one\n"
-            + "echo var2=$var1 two\n"
-            + "echo var3=yo $var4\n"
-            + "echo var4=three ${var2}";
+    private final static String SCRIPT_DEPENDENT_VARIABLES_BATCH = """
+        echo var1=one
+        echo var2=$var1 two
+        echo var3=yo $var4
+        echo var4=three ${var2}""";
 
-    final static String SCRIPT_OVERRIDDEN_VARIABLES_UNIX = "echo var1=one\n"
-            + "echo var1+something='not one'\n"
-            + "echo var2+something='two'";
+    private final static String SCRIPT_OVERRIDDEN_VARIABLES_UNIX = """
+        echo var1=one
+        echo var1+something='not one'
+        echo var2+something='two'""";
 
-    final static String SCRIPT_OVERRIDDEN_VARIABLES_BATCH = "echo var1=one\n"
-            + "echo var1+something=not one\n"
-            + "echo var2+something=two";
+    private final static String SCRIPT_OVERRIDDEN_VARIABLES_BATCH = """
+        echo var1=one
+        echo var1+something=not one
+        echo var2+something=two""";
 
-    final static String SCRIPT_UTF8 = "echo UTFstr=mąż";
+    private final static String SCRIPT_UTF8 = "echo UTFstr=mąż";
 
-    final static String SCRIPT_SHEBANG_UNIX = "#!/bin/cat\n"
+    private final static String SCRIPT_SHEBANG_UNIX = "#!/bin/cat\n"
             + "hello=world";
 
     // batch script does not have shebang
-    final static String SCRIPT_SHEBANG_BATCH = "echo hello=world";
+    private final static String SCRIPT_SHEBANG_BATCH = "echo hello=world";
+
+    @BeforeEach
+    void setUp(JenkinsRule rule) {
+        jenkins = rule;
+    }
 
     @Test
-    public void testConfigurationRoundtrip() throws Exception {
+    void testConfigurationRoundtrip() throws Exception {
         FreeStyleProject project = jenkins.createFreeStyleProject();
         String scriptType = Functions.isWindows() ? BATCH_SCRIPT : UNIX_SCRIPT;
         for (boolean hideValues : new boolean[] {true, false}) {
@@ -90,7 +102,8 @@ public class EnvironmentScriptTest {
         }
     }
 
-    public void testWithEmptyScript() throws Exception {
+    @Test
+    void testWithEmptyScript() throws Exception {
         String scriptType = UNIX_SCRIPT;
         if (Functions.isWindows()) {
             scriptType = BATCH_SCRIPT;
@@ -100,7 +113,7 @@ public class EnvironmentScriptTest {
     }
 
     @Test
-    public void testWithSimpleVariables() throws Exception {
+    void testWithSimpleVariables() throws Exception {
         String scriptType = UNIX_SCRIPT;
         if (Functions.isWindows()) {
             scriptType = BATCH_SCRIPT;
@@ -115,7 +128,7 @@ public class EnvironmentScriptTest {
     }
 
     @Test
-    public void testWithDependentVariables() throws Exception {
+    void testWithDependentVariables() throws Exception {
         String scriptType = UNIX_SCRIPT;
         String script = SCRIPT_DEPENDENT_VARIABLES_UNIX;
         if (Functions.isWindows()) {
@@ -133,7 +146,7 @@ public class EnvironmentScriptTest {
     }
 
     @Test
-    public void testWithOverriddenVariables() throws Exception {
+    void testWithOverriddenVariables() throws Exception {
         String scriptType = UNIX_SCRIPT;
         String script = SCRIPT_OVERRIDDEN_VARIABLES_UNIX;
         if (Functions.isWindows()) {
@@ -149,7 +162,7 @@ public class EnvironmentScriptTest {
     }
 
     @Test
-    public void testReadingFileFromSCM() throws Exception {
+    void testReadingFileFromSCM() throws Exception {
         String scriptType = UNIX_SCRIPT;
         String script = "cat envs";
         if (Functions.isWindows()) {
@@ -162,7 +175,7 @@ public class EnvironmentScriptTest {
     }
 
     @Test
-    public void testWorkingDirectory() throws Exception {
+    void testWorkingDirectory() throws Exception {
         String scriptType = UNIX_SCRIPT;
         if (Functions.isWindows()) {
             scriptType = BATCH_SCRIPT;
@@ -174,7 +187,7 @@ public class EnvironmentScriptTest {
     }
 
     @Test
-    public void testWithShebang() throws Exception {
+    void testWithShebang() throws Exception {
         String scriptType = UNIX_SCRIPT;
         String script = SCRIPT_SHEBANG_UNIX;
         if (Functions.isWindows()) {
@@ -188,7 +201,8 @@ public class EnvironmentScriptTest {
         assertEquals("world", vars.get("hello"));
     }
 
-    public void testUTFHandling() throws Exception {
+    @Test
+    void testUTFHandling() throws Exception {
         String scriptType = UNIX_SCRIPT;
         if (Functions.isWindows()) {
             scriptType = BATCH_SCRIPT;
@@ -201,7 +215,7 @@ public class EnvironmentScriptTest {
     }
 
     @Test
-    public void testHideEnvironmentVariablesValues() throws Exception {
+    void testHideEnvironmentVariablesValues() throws Exception {
         String scriptType = UNIX_SCRIPT;
         if (Functions.isWindows()) {
             scriptType = BATCH_SCRIPT;
@@ -210,13 +224,13 @@ public class EnvironmentScriptTest {
         assertEquals(Result.SUCCESS, job.build.getResult());
         List<String> logs = job.build.getLog(10);
 
-        assertTrue(logs.contains(new String("[environment-script] Adding variable 'var1'")));
-        assertTrue(logs.contains(new String("[environment-script] Adding variable 'var2'")));
-        assertTrue(logs.contains(new String("[environment-script] Adding variable 'var3'")));
+        assertTrue(logs.contains("[environment-script] Adding variable 'var1'"));
+        assertTrue(logs.contains("[environment-script] Adding variable 'var2'"));
+        assertTrue(logs.contains("[environment-script] Adding variable 'var3'"));
     }
 
     @Test
-    public void testShowEnvironmentVariablesValues() throws Exception {
+    void testShowEnvironmentVariablesValues() throws Exception {
         String scriptType = UNIX_SCRIPT;
         if (Functions.isWindows()) {
             scriptType = BATCH_SCRIPT;
@@ -225,8 +239,8 @@ public class EnvironmentScriptTest {
         assertEquals(Result.SUCCESS, job.build.getResult());
         List<String> logs = job.build.getLog(10);
 
-        assertTrue(logs.contains(new String("[environment-script] Adding variable 'var1' with value 'one'")));
-        assertTrue(logs.contains(new String("[environment-script] Adding variable 'var2' with value 'two'")));
-        assertTrue(logs.contains(new String("[environment-script] Adding variable 'var3' with value 'three'")));
+        assertTrue(logs.contains("[environment-script] Adding variable 'var1' with value 'one'"));
+        assertTrue(logs.contains("[environment-script] Adding variable 'var2' with value 'two'"));
+        assertTrue(logs.contains("[environment-script] Adding variable 'var3' with value 'three'"));
     }
 }
